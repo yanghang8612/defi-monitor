@@ -28,19 +28,6 @@ type Config struct {
     SlackWebhook string
 }
 
-type SlackConfig struct {
-    WebHook string `toml:"webhook"`
-}
-
-type AssetV2 struct {
-    Key   string
-    Value uint64
-}
-
-type Account struct {
-    Assets []AssetV2 `json:"assetV2"`
-}
-
 type Query struct {
     OwnerAddress     string `json:"owner_address"`
     ContractAddress  string `json:"contract_address"`
@@ -71,9 +58,7 @@ var (
 )
 
 func main() {
-    sendSlackMsg("[PSM Log]: Monitor now started")
-    stats()
-    report()
+    initMonitor()
 
     c := cron.New()
     _ = c.AddFunc("*/9 * * * * ?", check)
@@ -85,16 +70,23 @@ func main() {
     select {}
 }
 
+func initMonitor() {
+    sBalanceOfUSDT = getUSDTBalanceOf(USDTJoin)
+    sBalanceOfUSDD = getUSDDBalance()
+    preBalanceOfUSDT = sBalanceOfUSDT
+
+    sendSlackMsg("[PSM Log]: Monitor now started")
+    report()
+}
+
 func stats() {
     balanceOfUSDT := getUSDTBalanceOf(USDTJoin)
     balanceOfUSDD := getUSDDBalance()
-    diffUSDT := balanceOfUSDT.Sub(balanceOfUSDT, sBalanceOfUSDT)
-    diffUSDD := balanceOfUSDD.Sub(balanceOfUSDD, sBalanceOfUSDD)
     now := time.Now()
-    if sBalanceOfUSDT.CmpAbs(big.NewInt(0)) != 0 {
-        sendSlackMsg(fmt.Sprintf("[PSM Log]: Stats from `%s` ~ `%s`, USDT change - `%s`, USDD change - `%s`",
-            sTime.Format("15:04"), now.Format("15:04"), diffUSDT, diffUSDD))
-    }
+    sendSlackMsg(fmt.Sprintf("[PSM Log]: Stats from `%s` ~ `%s`, USDT change - `%s`, USDD change - `%s`",
+        sTime.Format("15:04"), now.Format("15:04"),
+        toReadableDec(sBalanceOfUSDT.Sub(balanceOfUSDT, sBalanceOfUSDT)),
+        toReadableDec(sBalanceOfUSDD.Sub(balanceOfUSDD, sBalanceOfUSDD))))
     sBalanceOfUSDT = balanceOfUSDT
     sBalanceOfUSDD = balanceOfUSDD
     sTime = now
@@ -105,7 +97,7 @@ func check() {
     balanceOfUSDT := getUSDTBalanceOf(USDTJoin)
     diff := big.NewInt(0)
     diff = diff.Sub(balanceOfUSDT, preBalanceOfUSDT)
-    if preBalanceOfUSDT.Cmp(big.NewInt(0)) != 0 && diff.CmpAbs(big.NewInt(10_000)) > 0 {
+    if diff.CmpAbs(big.NewInt(10_000)) > 0 {
         if diff.Sign() > 0 {
             sendSlackMsg(fmt.Sprintf("[PSM Log]: Large sellGem occurred - `%s` <!channel>", toReadableDec(diff)))
         } else {
