@@ -95,9 +95,9 @@ func check() {
     diff = diff.Sub(balanceOfUSDT, preBalanceOfUSDT)
     if preBalanceOfUSDT.Cmp(big.NewInt(0)) != 0 && diff.CmpAbs(big.NewInt(10_000)) > 0 {
         if diff.Sign() > 0 {
-            sendSlackMsg(fmt.Sprintf("[PSM Log]: Large sellGem occurred - `%s` <!channel>", convertDec6(diff)))
+            sendSlackMsg(fmt.Sprintf("[PSM Log]: Large sellGem occurred - `%s` <!channel>", toReadableDec(diff)))
         } else {
-            sendSlackMsg(fmt.Sprintf("[PSM Log]: Large buyGem occurred - `%s` <!channel>", convertDec6(diff)))
+            sendSlackMsg(fmt.Sprintf("[PSM Log]: Large buyGem occurred - `%s` <!channel>", toReadableDec(diff)))
         }
         report()
     }
@@ -128,7 +128,7 @@ func sendSlackMsg(msg string) {
     data, _ := json.Marshal(&SlackMessage{
         Text: msg,
     })
-    doPost("https://hooks.slack.com/services/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", data)
+    doPost("https://hooks.slack.com/services/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", data)
 }
 
 func getUSDTBalanceOf(user string) *big.Int {
