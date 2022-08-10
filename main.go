@@ -30,7 +30,7 @@ type AssetV2 struct {
 }
 
 type Account struct {
-	Assets []AssetV2 `json:"assetV2"`
+	Assets []AssetV2 `json:"assegotV2"`
 }
 
 type Query struct {
@@ -63,7 +63,7 @@ var (
 )
 
 func main() {
-	sendSlackMsg("[PSM Log]: Monitor now started\n")
+	sendSlackMsg("[PSM Log]: Monitor now started")
 	report()
 	c := cron.New()
 	_ = c.AddFunc("*/9 * * * * ?", check)
@@ -81,7 +81,7 @@ func stats() {
 	diffUSDT := balanceOfUSDT.Sub(balanceOfUSDT, sBalanceOfUSDT)
 	diffUSDD := balanceOfUSDD.Sub(balanceOfUSDD, sBalanceOfUSDD)
 	now := time.Now()
-	sendSlackMsg(fmt.Sprintf("[PSM Log]: Stats from `%s` ~ `%s`, USDT change - `%s`, USDD change - `%s`\n",
+	sendSlackMsg(fmt.Sprintf("[PSM Log]: Stats from `%s` ~ `%s`, USDT change - `%s`, USDD change - `%s`",
 		sTime.Format("01-02 15:04:05"), now.Format("01-02 15:04:05"), diffUSDT, diffUSDD))
 	sBalanceOfUSDT = balanceOfUSDT
 	sBalanceOfUSDD = balanceOfUSDD
@@ -95,9 +95,9 @@ func check() {
 	diff = diff.Sub(balanceOfUSDT, preBalanceOfUSDT)
 	if preBalanceOfUSDT.Cmp(big.NewInt(0)) != 0 && diff.CmpAbs(big.NewInt(100_000)) > 0 {
 		if diff.Sign() > 0 {
-			sendSlackMsg(fmt.Sprintf("[PSM Log]: Large sellGem occurred - `%s` <!channel>\n", convertDec6(diff)))
+			sendSlackMsg(fmt.Sprintf("[PSM Log]: Large sellGem occurred - `%s` <!channel>", convertDec6(diff)))
 		} else {
-			sendSlackMsg(fmt.Sprintf("[PSM Log]: Large buyGem occurred - `%s` <!channel>\n", convertDec6(diff)))
+			sendSlackMsg(fmt.Sprintf("[PSM Log]: Large buyGem occurred - `%s` <!channel>", convertDec6(diff)))
 		}
 		report()
 	}
@@ -107,7 +107,7 @@ func check() {
 	balanceOfUSDD := getUSDDBalanceOf(USDDJoin)
 	if !isLowUSDDWarned && balanceOfUSDD.CmpAbs(big.NewInt(1_000_000)) < 0 {
 		isLowUSDDWarned = true
-		sendSlackMsg(fmt.Sprintf("[PSM Log]: Vault remained USDD balance lower than 1M <!channel>\n"))
+		sendSlackMsg(fmt.Sprintf("[PSM Log]: Vault remained USDD balance lower than 1M <!channel>"))
 	}
 	if balanceOfUSDD.CmpAbs(big.NewInt(1_000_000)) >= 0 {
 		isLowUSDDWarned = false
@@ -120,7 +120,7 @@ func report() {
 	balanceOfUSDT := getUSDTBalanceOf(USDTJoin)
 	balanceOfUSDD := getUSDDBalanceOf(USDDJoin)
 	//fmt.Printf("[PSM Log]: USDT balance - `%s`, USDD balance - `%s`\n", toReadableDec(balanceOfUSDT), toReadableDec(balanceOfUSDD))
-	sendSlackMsg(fmt.Sprintf("[PSM Log]: USDT balance - `%s`, USDD balance - `%s`\n", toReadableDec(balanceOfUSDT), toReadableDec(balanceOfUSDD)))
+	sendSlackMsg(fmt.Sprintf("[PSM Log]: USDT balance - `%s`, USDD balance - `%s`", toReadableDec(balanceOfUSDT), toReadableDec(balanceOfUSDD)))
 	fmt.Printf("[%s] %s\n", time.Now().Format("01-02 15:04:05"), "Report task completed")
 }
 
@@ -128,7 +128,7 @@ func sendSlackMsg(msg string) {
 	data, _ := json.Marshal(&SlackMessage{
 		Text: msg,
 	})
-	doPost("https://hooks.slack.com/services/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", data)
+	doPost("https://hooks.slack.com/services/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", data)
 }
 
 func getUSDTBalanceOf(user string) *big.Int {
