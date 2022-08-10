@@ -4,18 +4,17 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
-    "github.com/BurntSushi/toml"
-    "github.com/status-im/keycard-go/hexutils"
     "io"
     "math/big"
     "net/http"
     "strconv"
-    "strings"
     "time"
 
+    "github.com/BurntSushi/toml"
     "github.com/btcsuite/btcutil/base58"
     "github.com/ethereum/go-ethereum/common"
     "github.com/robfig/cron"
+    "github.com/status-im/keycard-go/hexutils"
 )
 
 const (
@@ -78,8 +77,8 @@ func main() {
 
     c := cron.New()
     _ = c.AddFunc("*/9 * * * * ?", check)
-    _ = c.AddFunc("0 */10 * * * ?", report)
-    _ = c.AddFunc("0 0 */1 * * ?", stats)
+    _ = c.AddFunc("1 */10 * * * ?", report)
+    _ = c.AddFunc("2 0 */1 * * ?", stats)
     c.Start()
 
     defer c.Stop()
@@ -88,7 +87,7 @@ func main() {
 
 func stats() {
     balanceOfUSDT := getUSDTBalanceOf(USDTJoin)
-    balanceOfUSDD := getUSDDBalanceOf(USDDJoin)
+    balanceOfUSDD := getUSDDBalance()
     diffUSDT := balanceOfUSDT.Sub(balanceOfUSDT, sBalanceOfUSDT)
     diffUSDD := balanceOfUSDD.Sub(balanceOfUSDD, sBalanceOfUSDD)
     now := time.Now()
@@ -117,8 +116,8 @@ func check() {
     preBalanceOfUSDT = balanceOfUSDT
 
     // check if Vault remained USDD balance lower than 1M
-    balanceOfUSDD := getUSDDBalanceOf(USDDJoin)
-    if !isLowUSDDWarned && balanceOfUSDD.CmpAbs(big.NewInt(1_000_000)) < 0 {
+    balanceOfUSDD := getUSDDBalance()
+    if !isLowUSDDWarned && balanceOfUSDD.CmpAbs(big.NewInt(5_000_000)) < 0 {
         isLowUSDDWarned = true
         sendSlackMsg(fmt.Sprintf("[PSM Log]: Vault remained USDD balance lower than 1M <!channel>"))
     }
@@ -131,7 +130,7 @@ func check() {
 
 func report() {
     balanceOfUSDT := getUSDTBalanceOf(USDTJoin)
-    balanceOfUSDD := getUSDDBalanceOf(USDDJoin)
+    balanceOfUSDD := getUSDDBalance()
     //fmt.Printf("[PSM Log]: USDT balance - `%s`, USDD balance - `%s`\n", toReadableDec(balanceOfUSDT), toReadableDec(balanceOfUSDD))
     sendSlackMsg(fmt.Sprintf("[PSM Log]: USDT balance - `%s`, USDD balance - `%s`", toReadableDec(balanceOfUSDT), toReadableDec(balanceOfUSDD)))
     fmt.Printf("[%s] %s\n", time.Now().Format("01-02 15:04:05"), "Report task completed")
@@ -157,17 +156,8 @@ func getUSDTBalanceOf(user string) *big.Int {
     return convertDec6(toBigInt(query(USDT, "balanceOf(address)", toEthAddr(user))))
 }
 
-func getUSDDBalanceOf(user string) *big.Int {
-    data := doGet("https://api.trongrid.io/wallet/getaccount?address=" + user + "&visible=true")
-    var account Account
-    if err := json.Unmarshal(data, &account); err == nil {
-        for _, asset := range account.Assets {
-            if strings.Compare(asset.Key, "1004777") == 0 {
-                return convertDec6(big.NewInt(int64(asset.Value)))
-            }
-        }
-    }
-    return big.NewInt(0)
+func getUSDDBalance() *big.Int {
+    return convertDec6(toBigInt(query(USDDJoin, "getUsddBalance()", "")))
 }
 
 func query(addr, selector, param string) string {
