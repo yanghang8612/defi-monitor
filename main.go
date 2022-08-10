@@ -4,6 +4,7 @@ import (
     "bytes"
     "encoding/json"
     "fmt"
+    "github.com/BurntSushi/toml"
     "github.com/status-im/keycard-go/hexutils"
     "io"
     "math/big"
@@ -23,6 +24,14 @@ const (
     USDTJoin = "TMn5WeW8a8KH9o8rBQux4RCgckD2SuMZmS"
     USDDJoin = "TMgSSHn8APyUVViqXxtveqFEB7mBBeGqNP"
 )
+
+type Config struct {
+    SlackWebhook string
+}
+
+type SlackConfig struct {
+    WebHook string `toml:"webhook"`
+}
 
 type AssetV2 struct {
     Key   string
@@ -64,7 +73,9 @@ var (
 
 func main() {
     sendSlackMsg("[PSM Log]: Monitor now started")
+    stats()
     report()
+
     c := cron.New()
     _ = c.AddFunc("*/9 * * * * ?", check)
     _ = c.AddFunc("0 */10 * * * ?", report)
@@ -81,8 +92,10 @@ func stats() {
     diffUSDT := balanceOfUSDT.Sub(balanceOfUSDT, sBalanceOfUSDT)
     diffUSDD := balanceOfUSDD.Sub(balanceOfUSDD, sBalanceOfUSDD)
     now := time.Now()
-    sendSlackMsg(fmt.Sprintf("[PSM Log]: Stats from `%s` ~ `%s`, USDT change - `%s`, USDD change - `%s`",
-        sTime.Format("01-02 15:04:05"), now.Format("01-02 15:04:05"), diffUSDT, diffUSDD))
+    if sBalanceOfUSDT.CmpAbs(big.NewInt(0)) != 0 {
+        sendSlackMsg(fmt.Sprintf("[PSM Log]: Stats from `%s` ~ `%s`, USDT change - `%s`, USDD change - `%s`",
+            sTime.Format("15:04"), now.Format("15:04"), diffUSDT, diffUSDD))
+    }
     sBalanceOfUSDT = balanceOfUSDT
     sBalanceOfUSDD = balanceOfUSDD
     sTime = now
@@ -128,7 +141,16 @@ func sendSlackMsg(msg string) {
     data, _ := json.Marshal(&SlackMessage{
         Text: msg,
     })
-    doPost("https://hooks.slack.com/services/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", data)
+    doPost(getConfig().SlackWebhook, data)
+}
+
+func getConfig() *Config {
+    var config Config
+    data, err := toml.DecodeFile("./config.toml", &config)
+    if err != nil {
+        fmt.Println(data, err)
+    }
+    return &config
 }
 
 func getUSDTBalanceOf(user string) *big.Int {
