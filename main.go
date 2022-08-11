@@ -77,7 +77,6 @@ func initMonitor() {
 
     sendSlackMsg("APP", "Monitor now started")
     report()
-    stats()
 }
 
 func stats() {
@@ -136,7 +135,7 @@ func sendSlackMsg(topic, format string, a ...any) {
     data, _ := json.Marshal(&SlackMessage{
         Text: fmt.Sprintf("[%s] %s", topic, fmt.Sprintf(format, a...)),
     })
-    fmt.Println(string(data))
+    //fmt.Println(string(data))
     doPost(getConfig().SlackWebhook, data)
 }
 
