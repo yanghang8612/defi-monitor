@@ -4,6 +4,7 @@ import (
     "fmt"
     "psm-monitor/config"
     "psm-monitor/net"
+    "time"
 )
 
 type Message struct {
@@ -19,5 +20,6 @@ func SendMsg(topic, format string, a ...any) {
 }
 
 func ReportPanic(reason string) {
-    SendMsg("APP", reason)
+    //SendMsg("APP", reason)
+    fmt.Printf("[%s] report panic: %s\n", time.Now().Format("01-02 15:04:05"), reason)
 }

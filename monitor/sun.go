@@ -178,15 +178,18 @@ func (s *SUN) report() {
     var (
         USDDRatio float64
         USDTRatio float64
+        Format    string
     )
     if USDDPoolBalance.Cmp(USDTPoolBalance) > 0 {
         USDDRatio = USDDFloat64 / USDTFloat64
         USDTRatio = 1.0
+        Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.3f` : `%.0f`"
     } else {
         USDDRatio = 1.0
         USDTRatio = USDTFloat64 / USDDFloat64
+        Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
     }
-    slack.SendMsg("SUN", "USDD - %s, USDT - %s, A - `%d`, Ratio - `%.3f%% : %.3f%% (%.3f : %.3f)`",
+    slack.SendMsg("SUN", "USDD - %s, USDT - %s, A - `%d`, Ratio - "+Format,
         misc.ToReadableDec(USDDPoolBalance, false),
         misc.ToReadableDec(USDTPoolBalance, false),
         s.getA(),

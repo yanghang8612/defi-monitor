@@ -2,6 +2,7 @@ package net
 
 import (
     "bytes"
+    "crypto/tls"
     "encoding/json"
     "errors"
     "fmt"
@@ -9,8 +10,10 @@ import (
     "github.com/status-im/keycard-go/hexutils"
     "io"
     "math/big"
+    "net"
     "net/http"
     "strings"
+    "time"
 )
 
 const (
@@ -21,6 +24,27 @@ const (
 
 var ErrNoReturn = errors.New("net: no return data")
 var ErrQueryFailed = errors.New("net: query failed")
+
+var defaultTransport = &http.Transport{
+    Proxy: http.ProxyFromEnvironment,
+    DialContext: (&net.Dialer{
+        Timeout:   30 * time.Second,
+        KeepAlive: 30 * time.Second,
+    }).DialContext,
+    ForceAttemptHTTP2:     true,
+    MaxIdleConns:          100,
+    IdleConnTimeout:       90 * time.Second,
+    TLSHandshakeTimeout:   10 * time.Second,
+    ExpectContinueTimeout: 1 * time.Second,
+    TLSClientConfig: &tls.Config{
+        MinVersion: tls.VersionTLS12,
+    },
+}
+
+var defaultHTTPClient = &http.Client{
+    Transport: defaultTransport,
+    Timeout:   3 * time.Second,
+}
 
 type Request struct {
     OwnerAddress     string `json:"owner_address"`
@@ -114,29 +138,39 @@ func Query(addr, selector, param string) (string, error) {
 }
 
 func Get(url string) ([]byte, error) {
-    resp, err := http.Get(url)
-    if err == nil && resp.StatusCode == 200 {
-        defer resp.Body.Close()
-        if body, err := io.ReadAll(resp.Body); err == nil {
-            return body, nil
-        }
-        return nil, err
+    rsp, netErr := defaultHTTPClient.Get(url)
+    if netErr != nil {
+        return nil, netErr
     }
-    return nil, err
+    if rsp.StatusCode == 200 {
+        defer rsp.Body.Close()
+        if body, ioErr := io.ReadAll(rsp.Body); ioErr == nil {
+            return body, nil
+        } else {
+            return nil, ioErr
+        }
+    } else {
+        return nil, errors.New(fmt.Sprintf("net: %d status code", rsp.StatusCode))
+    }
 }
 
 func Post(url string, d interface{}) ([]byte, error) {
-    reqData, err := json.Marshal(d)
-    if err != nil {
-        return nil, err
+    reqData, jsonErr := json.Marshal(d)
+    if jsonErr != nil {
+        return nil, jsonErr
     }
-    rsp, err := http.Post(url, "application/json", bytes.NewBuffer(reqData))
-    if err == nil && rsp.StatusCode == 200 {
+    rsp, netErr := defaultHTTPClient.Post(url, "application/json", bytes.NewBuffer(reqData))
+    if netErr != nil {
+        return nil, netErr
+    }
+    if rsp.StatusCode == 200 {
         defer rsp.Body.Close()
-        if body, err := io.ReadAll(rsp.Body); err == nil {
-            return body, err
+        if body, ioErr := io.ReadAll(rsp.Body); ioErr == nil {
+            return body, ioErr
+        } else {
+            return nil, ioErr
         }
-        return nil, err
+    } else {
+        return nil, errors.New(fmt.Sprintf("net: %d status code", rsp.StatusCode))
     }
-    return nil, err
 }
