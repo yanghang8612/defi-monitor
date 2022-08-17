@@ -15,6 +15,7 @@ type Config struct {
 type SUNConfig struct {
     SwapThreshold      int64 `toml:"swap_threshold"`
     LiquidityThreshold int64 `toml:"liquidity_threshold"`
+    ReportThreshold    int64 `toml:"report_threshold"`
 }
 
 type PSMConfig struct {

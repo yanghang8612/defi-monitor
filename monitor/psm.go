@@ -23,11 +23,16 @@ const (
 type PSM struct {
     topic string
 
-    preBalanceOfUSDD *big.Int
-    preBalanceOfUSDT *big.Int
-    isLowUSDDWarned  bool
+    // check values
+    cBalanceOfUSDD  *big.Int
+    cBalanceOfUSDT  *big.Int
+    isLowUSDDWarned bool
 
-    // stats params
+    // report values
+    rBalanceOfUSDD *big.Int
+    rBalanceOfUSDT *big.Int
+
+    // stats values
     sBalanceOfUSDD *big.Int
     sBalanceOfUSDT *big.Int
     sTime          time.Time
@@ -43,17 +48,17 @@ func StartPSM(c *cron.Cron, _ map[string]func(event *net.Event)) {
 }
 
 func (p *PSM) init() {
-    p.sBalanceOfUSDD = p.getUSDDBalance()
-    p.sBalanceOfUSDT = p.getUSDTBalance()
-    p.preBalanceOfUSDT = big.NewInt(-1)
+    p.cBalanceOfUSDD, p.cBalanceOfUSDT = p.getUSDDBalance(), p.getUSDTBalance()
+    p.rBalanceOfUSDD, p.rBalanceOfUSDT = big.NewInt(-1), big.NewInt(-1)
+    p.sBalanceOfUSDD, p.sBalanceOfUSDT = p.cBalanceOfUSDD, p.cBalanceOfUSDT
     p.report()
 }
 
 func (p *PSM) check() {
-    // check if large sell or bug occurred
+    // check if large sell or big happened
     balanceOfUSDT := p.getUSDTBalance()
     diff := big.NewInt(0)
-    diff = diff.Sub(balanceOfUSDT, p.preBalanceOfUSDT)
+    diff = diff.Sub(balanceOfUSDT, p.cBalanceOfUSDT)
     if diff.CmpAbs(big.NewInt(config.Get().PSM.GemThreshold)) > 0 {
         if diff.Sign() > 0 {
             slack.SendMsg(p.topic, "Large sellGem - %s <!channel>", misc.ToReadableDec(diff, true))
@@ -62,7 +67,7 @@ func (p *PSM) check() {
         }
         p.report()
     }
-    p.preBalanceOfUSDT = balanceOfUSDT
+    p.cBalanceOfUSDT = balanceOfUSDT
 
     // check if Vault remained USDD balance lower than threshold
     balanceOfUSDD := p.getUSDDBalance()
@@ -75,40 +80,26 @@ func (p *PSM) check() {
     if balanceOfUSDD.CmpAbs(threshold) >= 0 {
         p.isLowUSDDWarned = false
     }
-    p.preBalanceOfUSDD = balanceOfUSDD
+    p.cBalanceOfUSDD = balanceOfUSDD
 }
 
 func (p *PSM) report() {
-    balanceOfUSDD := p.getUSDDBalance()
-    balanceOfUSDT := p.getUSDTBalance()
-    if balanceOfUSDT.Cmp(p.preBalanceOfUSDT) != 0 {
+    balanceOfUSDD, balanceOfUSDT := p.getUSDDBalance(), p.getUSDTBalance()
+    if balanceOfUSDD.Cmp(p.rBalanceOfUSDD) != 0 || balanceOfUSDT.Cmp(p.rBalanceOfUSDT) != 0 {
         slack.SendMsg(p.topic, "USDD - %s, USDT - %s",
             misc.ToReadableDec(balanceOfUSDD, false),
             misc.ToReadableDec(balanceOfUSDT, false))
     }
+    p.rBalanceOfUSDD, p.rBalanceOfUSDT = balanceOfUSDD, balanceOfUSDT
 }
 
 func (p *PSM) stats() {
-    balanceOfUSDD := p.getUSDDBalance()
-    balanceOfUSDT := p.getUSDTBalance()
-    now := time.Now()
+    balanceOfUSDD, balanceOfUSDT, now := p.getUSDDBalance(), p.getUSDTBalance(), time.Now()
     slack.SendMsg(p.topic, "Stats from `%s` ~ `%s`, USDD - %s, USDT - %s",
         p.sTime.Format("15:04"), now.Format("15:04"),
         misc.ToReadableDec(p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD), true),
         misc.ToReadableDec(p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT), true))
-    p.sBalanceOfUSDD = balanceOfUSDD
-    p.sBalanceOfUSDT = balanceOfUSDT
-    p.sTime = now
-}
-
-func (p *PSM) getUSDTBalance() *big.Int {
-    result, err := net.Query(USDT, "balanceOf(address)", misc.ToEthAddr(USDTJoin))
-    if err != nil {
-        // if we cannot get current USDT balance, return the pre value
-        slack.ReportPanic(err.Error())
-        return p.preBalanceOfUSDT
-    }
-    return misc.ConvertDec6(misc.ToBigInt(result))
+    p.sBalanceOfUSDD, p.sBalanceOfUSDT, p.sTime = balanceOfUSDD, balanceOfUSDT, now
 }
 
 func (p *PSM) getUSDDBalance() *big.Int {
@@ -116,7 +107,17 @@ func (p *PSM) getUSDDBalance() *big.Int {
     if err != nil {
         // if we cannot get current USDD balance, return the pre value
         slack.ReportPanic(err.Error())
-        return p.preBalanceOfUSDD
+        return p.cBalanceOfUSDD
+    }
+    return misc.ConvertDec6(misc.ToBigInt(result))
+}
+
+func (p *PSM) getUSDTBalance() *big.Int {
+    result, err := net.Query(USDT, "balanceOf(address)", misc.ToEthAddr(USDTJoin))
+    if err != nil {
+        // if we cannot get current USDT balance, return the c-value
+        slack.ReportPanic(err.Error())
+        return p.cBalanceOfUSDT
     }
     return misc.ConvertDec6(misc.ToBigInt(result))
 }

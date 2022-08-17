@@ -2,6 +2,7 @@ slack_webhook = "...(your slack webhook url)"
 [SUN]
 swap_threshold = 100_000
 liquidity_threshold = 100_000
+report_threshold = 1_000_000
 [PSM]
 gem_threshold = 100_000
 dai_threshold = 5_000_000

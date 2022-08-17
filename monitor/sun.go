@@ -26,11 +26,16 @@ const (
 type SUN struct {
     topic string
 
-    preUSDDPoolBalance *big.Int
-    preUSDTPoolBalance *big.Int
-    preA               int64
+    // check values
+    cUSDDPoolBalance *big.Int
+    cUSDTPoolBalance *big.Int
 
-    // stats params
+    // report values
+    rUSDDPoolBalance *big.Int
+    rUSDTPoolBalance *big.Int
+    preA             int64
+
+    // stats values
     sUSDDPoolBalance *big.Int
     sUSDTPoolBalance *big.Int
     sTime            time.Time
@@ -148,33 +153,28 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
 }
 
 func (s *SUN) init() {
-    s.sUSDDPoolBalance = s.getPoolUSDDBalance()
-    s.sUSDTPoolBalance = s.getPoolUSDTBalance()
-    s.preUSDDPoolBalance = s.sUSDDPoolBalance
-    s.preUSDTPoolBalance = s.sUSDTPoolBalance
+    s.cUSDDPoolBalance, s.cUSDTPoolBalance = s.getPoolUSDDBalance(), s.getPoolUSDTBalance()
+    s.rUSDDPoolBalance, s.rUSDTPoolBalance = s.cUSDDPoolBalance, s.cUSDTPoolBalance
+    s.sUSDDPoolBalance, s.sUSDTPoolBalance = s.cUSDDPoolBalance, s.cUSDTPoolBalance
     s.report()
 }
 
 func (s *SUN) check() {
-    USDDPoolBalance := s.getPoolUSDDBalance()
-    USDTPoolBalance := s.getPoolUSDTBalance()
-
+    USDDPoolBalance, USDTPoolBalance := s.getPoolUSDDBalance(), s.getPoolUSDTBalance()
     diffUSDD := big.NewInt(0)
-    diffUSDD = diffUSDD.Sub(USDDPoolBalance, s.preUSDDPoolBalance)
+    diffUSDD = diffUSDD.Sub(USDDPoolBalance, s.cUSDDPoolBalance)
     diffUSDT := big.NewInt(0)
-    diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.preUSDTPoolBalance)
-    if diffUSDT.CmpAbs(big.NewInt(1_000_000)) >= 0 {
+    diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.cUSDTPoolBalance)
+    if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.LiquidityThreshold)) >= 0 {
         slack.SendMsg("SUN", "Large pool balance change, USDD - %s, USDT - %s <!channel>",
             misc.ToReadableDec(diffUSDD, true),
             misc.ToReadableDec(diffUSDT, true))
     }
-    s.preUSDDPoolBalance = USDDPoolBalance
-    s.preUSDTPoolBalance = USDTPoolBalance
+    s.cUSDDPoolBalance, s.cUSDTPoolBalance = USDDPoolBalance, USDTPoolBalance
 }
 
 func (s *SUN) report() {
-    USDDPoolBalance := s.getPoolUSDDBalance()
-    USDTPoolBalance := s.getPoolUSDTBalance()
+    USDDPoolBalance, USDTPoolBalance, curA := s.getPoolUSDDBalance(), s.getPoolUSDTBalance(), s.getA()
     USDDFloat64 := float64(USDDPoolBalance.Uint64())
     USDTFloat64 := float64(USDTPoolBalance.Uint64())
     TotalFloat64 := USDDFloat64 + USDTFloat64
@@ -192,45 +192,46 @@ func (s *SUN) report() {
         USDTRatio = USDTFloat64 / USDDFloat64
         Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
     }
-    curA := s.getA()
-    slack.SendMsg("SUN", "USDD - %s, USDT - %s, A - `%d`, Ratio - "+Format,
-        misc.ToReadableDec(USDDPoolBalance, false),
-        misc.ToReadableDec(USDTPoolBalance, false),
-        curA,
-        USDDFloat64*100/TotalFloat64,
-        USDTFloat64*100/TotalFloat64,
-        USDDRatio,
-        USDTRatio)
-    s.preA = curA
+    if USDDPoolBalance.Cmp(s.rUSDDPoolBalance) != 0 || USDTPoolBalance.Cmp(s.rUSDTPoolBalance) != 0 {
+        slack.SendMsg("SUN", "USDD - %s, USDT - %s, A - `%d`, Ratio - "+Format,
+            misc.ToReadableDec(USDDPoolBalance, false),
+            misc.ToReadableDec(USDTPoolBalance, false),
+            curA,
+            USDDFloat64*100/TotalFloat64,
+            USDTFloat64*100/TotalFloat64,
+            USDDRatio,
+            USDTRatio)
+    }
+    s.rUSDDPoolBalance, s.rUSDTPoolBalance, s.preA = USDDPoolBalance, USDTPoolBalance, curA
 }
 
 func (s *SUN) stats() {
-    USDDPoolBalance := s.getPoolUSDDBalance()
-    USDTPoolBalance := s.getPoolUSDTBalance()
-    now := time.Now()
+    USDDPoolBalance, USDTPoolBalance, now := s.getPoolUSDDBalance(), s.getPoolUSDTBalance(), time.Now()
     slack.SendMsg("SUN", "Stats from `%s` ~ `%s`, USDD - %s, USDT - %s",
         s.sTime.Format("15:04"), now.Format("15:04"),
         misc.ToReadableDec(s.sUSDDPoolBalance.Sub(USDDPoolBalance, s.sUSDDPoolBalance), true),
         misc.ToReadableDec(s.sUSDTPoolBalance.Sub(USDTPoolBalance, s.sUSDTPoolBalance), true))
-    s.sUSDDPoolBalance = USDDPoolBalance
-    s.sUSDTPoolBalance = USDTPoolBalance
-    s.sTime = now
+    s.sUSDDPoolBalance, s.sUSDTPoolBalance, s.sTime = USDDPoolBalance, USDTPoolBalance, now
 }
 
 func (s *SUN) getA() int64 {
-    result, err := net.Query(Sun2pool, "A()", "")
-    if err != nil {
-        slack.ReportPanic(err.Error())
+    if result, err := net.Query(Sun2pool, "A()", ""); err == nil {
+        return misc.ToBigInt(result).Int64()
+    } else {
+        // if we cannot get current pool A value, return the pre-value
+        misc.Log("Query pool A value failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
         return s.preA
     }
-    return misc.ToBigInt(result).Int64()
+
 }
 
 func (s *SUN) getPoolUSDDBalance() *big.Int {
     if res, err := s.getPoolBalanceOfIndex(0); err == nil {
         return misc.ConvertDec18(res)
     } else {
-        return s.preUSDDPoolBalance
+        // if we cannot get current USDD pool balance, return the c-value
+        misc.Log("Query pool USDD balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        return s.cUSDDPoolBalance
     }
 }
 
@@ -238,14 +239,15 @@ func (s *SUN) getPoolUSDTBalance() *big.Int {
     if res, err := s.getPoolBalanceOfIndex(1); err == nil {
         return misc.ConvertDec6(res)
     } else {
-        return s.preUSDTPoolBalance
+        // if we cannot get current USDT pool balance, return the c-value
+        misc.Log("Query pool USDT balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        return s.cUSDTPoolBalance
     }
 }
 
 func (s *SUN) getPoolBalanceOfIndex(i uint) (*big.Int, error) {
     result, err := net.Query(Sun2pool, "balances(uint256)", hexutils.BytesToHex(uint256.NewInt(uint64(i)).PaddedBytes(32)))
     if err != nil {
-        slack.ReportPanic(err.Error())
         return big.NewInt(0), err
     }
     return misc.ToBigInt(result), nil
