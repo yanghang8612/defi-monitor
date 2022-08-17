@@ -84,8 +84,6 @@ func (p *PSM) report() {
             misc.ToReadableDec(balanceOfUSDD, false),
             misc.ToReadableDec(balanceOfUSDT, false))
     }
-    p.preBalanceOfUSDD = p.sBalanceOfUSDD
-    p.preBalanceOfUSDT = p.sBalanceOfUSDT
 }
 
 func (p *PSM) stats() {
