@@ -144,7 +144,7 @@ func Query(addr, selector, param string) (string, error) {
 
 func Get(url string) ([]byte, error) {
     req, _ := http.NewRequest("GET", url, nil)
-    return doRequestWithRetry(req, nil)
+    return doRequestWithRetry(req, []byte("nil"))
 }
 
 func Post(url string, d interface{}) ([]byte, error) {
