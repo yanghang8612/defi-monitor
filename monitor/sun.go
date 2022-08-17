@@ -26,6 +26,7 @@ type SUN struct {
 
     preUSDDPoolBalance *big.Int
     preUSDTPoolBalance *big.Int
+    preA               int64
 
     // stats params
     sUSDDPoolBalance *big.Int
@@ -189,14 +190,16 @@ func (s *SUN) report() {
         USDTRatio = USDTFloat64 / USDDFloat64
         Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
     }
+    curA := s.getA()
     slack.SendMsg("SUN", "USDD - %s, USDT - %s, A - `%d`, Ratio - "+Format,
         misc.ToReadableDec(USDDPoolBalance, false),
         misc.ToReadableDec(USDTPoolBalance, false),
-        s.getA(),
+        curA,
         USDDFloat64*100/TotalFloat64,
         USDTFloat64*100/TotalFloat64,
         USDDRatio,
         USDTRatio)
+    s.preA = curA
 }
 
 func (s *SUN) stats() {
@@ -216,24 +219,32 @@ func (s *SUN) getA() int64 {
     result, err := net.Query(Sun2pool, "A()", "")
     if err != nil {
         slack.ReportPanic(err.Error())
-        return -1
+        return s.preA
     }
     return misc.ToBigInt(result).Int64()
 }
 
 func (s *SUN) getPoolUSDDBalance() *big.Int {
-    return misc.ConvertDec18(s.getPoolBalanceOfIndex(0))
+    if res, err := s.getPoolBalanceOfIndex(0); err == nil {
+        return misc.ConvertDec18(res)
+    } else {
+        return s.preUSDDPoolBalance
+    }
 }
 
 func (s *SUN) getPoolUSDTBalance() *big.Int {
-    return misc.ConvertDec6(s.getPoolBalanceOfIndex(1))
+    if res, err := s.getPoolBalanceOfIndex(1); err == nil {
+        return misc.ConvertDec6(res)
+    } else {
+        return s.preUSDTPoolBalance
+    }
 }
 
-func (s *SUN) getPoolBalanceOfIndex(i uint) *big.Int {
+func (s *SUN) getPoolBalanceOfIndex(i uint) (*big.Int, error) {
     result, err := net.Query(Sun2pool, "balances(uint256)", hexutils.BytesToHex(uint256.NewInt(uint64(i)).PaddedBytes(32)))
     if err != nil {
         slack.ReportPanic(err.Error())
-        return big.NewInt(0)
+        return big.NewInt(0), err
     }
-    return misc.ToBigInt(result)
+    return misc.ToBigInt(result), nil
 }

@@ -2,11 +2,13 @@ package main
 
 import (
     "github.com/robfig/cron"
+    "math/rand"
     "psm-monitor/misc"
     "psm-monitor/monitor"
     "psm-monitor/net"
     "psm-monitor/slack"
     "sync"
+    "time"
 )
 
 var (
@@ -33,6 +35,7 @@ func initApp() {
     slack.SendMsg("APP", "Monitor now started, components - [PSM, SUN, JST]")
     trackedBlockNumber = net.BlockNumber() - 1
     trackedEvent = make(map[string]func(event *net.Event))
+    rand.Seed(time.Now().UnixNano())
 }
 
 func track() {

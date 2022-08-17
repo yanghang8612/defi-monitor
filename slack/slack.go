@@ -3,8 +3,9 @@ package slack
 import (
     "fmt"
     "psm-monitor/config"
+    "psm-monitor/misc"
     "psm-monitor/net"
-    "time"
+    "strings"
 )
 
 type Message struct {
@@ -15,11 +16,17 @@ func SendMsg(topic, format string, a ...any) {
     msg := &Message{
         Text: fmt.Sprintf("[%s] %s", topic, fmt.Sprintf(format, a...)),
     }
-    fmt.Println(msg)
-    _, _ = net.Post(config.Get().SlackWebhook, msg)
+    res, err := net.Post(config.Get().SlackWebhook, msg)
+    if err != nil {
+        misc.Warn("Send slack message", fmt.Sprintf("content=%s res=failed reason=\"%s\"", msg, err.Error()))
+    } else if strings.Compare("true", string(res)) != 0 {
+        misc.Warn("Send slack message", fmt.Sprintf("content=%s res=failed reason=\"slack retruned false\"", msg))
+    } else {
+        misc.Log("Send slack message", fmt.Sprintf("content=%s res=success", msg))
+    }
 }
 
 func ReportPanic(reason string) {
     //SendMsg("APP", reason)
-    fmt.Printf("[%s] report panic: %s\n", time.Now().Format("01-02 15:04:05"), reason)
+    misc.Error("Panic happened", reason)
 }

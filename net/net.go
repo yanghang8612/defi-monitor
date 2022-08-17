@@ -10,8 +10,10 @@ import (
     "github.com/status-im/keycard-go/hexutils"
     "io"
     "math/big"
+    "math/rand"
     "net"
     "net/http"
+    "psm-monitor/misc"
     "strings"
     "time"
 )
@@ -22,6 +24,7 @@ const (
     EventsPath  = "v1/blocks/%d/events?limit=100"
 )
 
+var ErrHttpFailed = errors.New("net: http request failed")
 var ErrNoReturn = errors.New("net: no return data")
 var ErrQueryFailed = errors.New("net: query failed")
 
@@ -116,7 +119,7 @@ func GetBlockEvents(blockNumber uint64) []Event {
 }
 
 func Query(addr, selector, param string) (string, error) {
-    rspData, err := Post(Endpoint+TriggerPath, Request{
+    resData, err := Post(Endpoint+TriggerPath, Request{
         OwnerAddress:     "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
         ContractAddress:  addr,
         FunctionSelector: selector,
@@ -126,32 +129,20 @@ func Query(addr, selector, param string) (string, error) {
     if err != nil {
         return "", err
     }
-    var queryRsp QueryResponse
-    _ = json.Unmarshal(rspData, &queryRsp)
-    if !queryRsp.RpcResult.TriggerResult {
+    var queryRes QueryResponse
+    _ = json.Unmarshal(resData, &queryRes)
+    if !queryRes.RpcResult.TriggerResult {
         return "", ErrQueryFailed
     }
-    if len(queryRsp.Result) > 0 {
-        return queryRsp.Result[0], nil
+    if len(queryRes.Result) > 0 {
+        return queryRes.Result[0], nil
     }
     return "", ErrNoReturn
 }
 
 func Get(url string) ([]byte, error) {
-    rsp, netErr := defaultHTTPClient.Get(url)
-    if netErr != nil {
-        return nil, netErr
-    }
-    if rsp.StatusCode == 200 {
-        defer rsp.Body.Close()
-        if body, ioErr := io.ReadAll(rsp.Body); ioErr == nil {
-            return body, nil
-        } else {
-            return nil, ioErr
-        }
-    } else {
-        return nil, errors.New(fmt.Sprintf("net: %d status code", rsp.StatusCode))
-    }
+    req, _ := http.NewRequest("GET", url, nil)
+    return doRequestWithRetry(req, nil)
 }
 
 func Post(url string, d interface{}) ([]byte, error) {
@@ -159,18 +150,32 @@ func Post(url string, d interface{}) ([]byte, error) {
     if jsonErr != nil {
         return nil, jsonErr
     }
-    rsp, netErr := defaultHTTPClient.Post(url, "application/json", bytes.NewBuffer(reqData))
-    if netErr != nil {
-        return nil, netErr
-    }
-    if rsp.StatusCode == 200 {
-        defer rsp.Body.Close()
-        if body, ioErr := io.ReadAll(rsp.Body); ioErr == nil {
-            return body, ioErr
-        } else {
-            return nil, ioErr
+    req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqData))
+    req.Header.Set("Content-Type", "application/json")
+    return doRequestWithRetry(req, reqData)
+}
+
+func doRequestWithRetry(req *http.Request, body []byte) ([]byte, error) {
+    reqId := rand.Uint32()
+    misc.Log("Http request start", fmt.Sprintf("url=%s method=%-4s data=%s reqid=%d", req.URL, req.Method, string(body), reqId))
+    for i := 1; i <= 3; i++ {
+        startAt := time.Now()
+        retRes, retErr := defaultHTTPClient.Do(req)
+        cost := time.Now().Sub(startAt).Milliseconds()
+        if retErr == nil && retRes.StatusCode == 200 {
+            if body, ioErr := io.ReadAll(retRes.Body); ioErr == nil {
+                _ = retRes.Body.Close()
+                misc.Log("Http request success", fmt.Sprintf("reqid=%d cost=%dms", reqId, reqId))
+                return body, nil
+            }
+            _ = retRes.Body.Close()
         }
-    } else {
-        return nil, errors.New(fmt.Sprintf("net: %d status code", rsp.StatusCode))
+        if retErr != nil {
+            misc.Warn("Http request retry", fmt.Sprintf("reqid=%d cost=%dms times=%dth reason=\"%s\"", reqId, cost, i, retErr.Error()))
+        } else {
+            misc.Warn("Http request retry", fmt.Sprintf("reqid=%d cost=%dms times=%dth reason=\"invalid status code %d\"", reqId, cost, i, retRes.StatusCode))
+        }
     }
+    misc.Error("Http request failed", fmt.Sprintf("reqid=%d reason=\"retry exceed three times\"", reqId))
+    return nil, ErrHttpFailed
 }

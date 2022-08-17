@@ -21,6 +21,7 @@ const (
 type PSM struct {
     topic string
 
+    preBalanceOfUSDD *big.Int
     preBalanceOfUSDT *big.Int
     isLowUSDDWarned  bool
 
@@ -72,6 +73,7 @@ func (p *PSM) check() {
     if balanceOfUSDD.CmpAbs(threshold) >= 0 {
         p.isLowUSDDWarned = false
     }
+    p.preBalanceOfUSDD = balanceOfUSDD
 }
 
 func (p *PSM) report() {
@@ -82,6 +84,7 @@ func (p *PSM) report() {
             misc.ToReadableDec(balanceOfUSDD, false),
             misc.ToReadableDec(balanceOfUSDT, false))
     }
+    p.preBalanceOfUSDD = p.sBalanceOfUSDD
     p.preBalanceOfUSDT = p.sBalanceOfUSDT
 }
 
@@ -101,8 +104,9 @@ func (p *PSM) stats() {
 func (p *PSM) getUSDTBalance() *big.Int {
     result, err := net.Query(USDT, "balanceOf(address)", misc.ToEthAddr(USDTJoin))
     if err != nil {
+        // if we cannot get current USDT balance, return the pre value
         slack.ReportPanic(err.Error())
-        return big.NewInt(0)
+        return p.preBalanceOfUSDT
     }
     return misc.ConvertDec6(misc.ToBigInt(result))
 }
@@ -110,8 +114,9 @@ func (p *PSM) getUSDTBalance() *big.Int {
 func (p *PSM) getUSDDBalance() *big.Int {
     result, err := net.Query(USDDJoin, "getUsddBalance()", "")
     if err != nil {
+        // if we cannot get current USDD balance, return the pre value
         slack.ReportPanic(err.Error())
-        return big.NewInt(0)
+        return p.preBalanceOfUSDD
     }
     return misc.ConvertDec6(misc.ToBigInt(result))
 }
