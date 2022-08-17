@@ -154,7 +154,7 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
 
 func (s *SUN) init() {
     s.cUSDDPoolBalance, s.cUSDTPoolBalance = s.getPoolUSDDBalance(), s.getPoolUSDTBalance()
-    s.rUSDDPoolBalance, s.rUSDTPoolBalance = s.cUSDDPoolBalance, s.cUSDTPoolBalance
+    s.rUSDDPoolBalance, s.rUSDTPoolBalance = big.NewInt(-1), big.NewInt(-1)
     s.sUSDDPoolBalance, s.sUSDTPoolBalance = s.cUSDDPoolBalance, s.cUSDTPoolBalance
     s.report()
 }
