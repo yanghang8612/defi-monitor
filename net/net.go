@@ -159,7 +159,8 @@ func Post(url string, d interface{}) ([]byte, error) {
 
 func doRequestWithRetry(req *http.Request, body []byte) ([]byte, error) {
     reqId := rand.Uint32()
-    misc.Log("Http request start", fmt.Sprintf("url=%s method=%-4s data=%s reqid=%d", req.URL, req.Method, string(body), reqId))
+    title := "Http request report"
+    misc.Log(title, fmt.Sprintf("url=%s method=%s data=%s reqid=%d", req.URL, req.Method, string(body), reqId))
     for i := 1; i <= 3; i++ {
         startAt := time.Now()
         retRes, retErr := defaultHTTPClient.Do(req)
@@ -167,17 +168,17 @@ func doRequestWithRetry(req *http.Request, body []byte) ([]byte, error) {
         if retErr == nil && retRes.StatusCode == 200 {
             if body, ioErr := io.ReadAll(retRes.Body); ioErr == nil {
                 _ = retRes.Body.Close()
-                misc.Log("Http request success", fmt.Sprintf("reqid=%d cost=%dms", reqId, cost))
+                misc.Debug(title, fmt.Sprintf("status=success reqid=%d cost=%dms", reqId, cost))
                 return body, nil
             }
             _ = retRes.Body.Close()
         }
         if retErr != nil {
-            misc.Warn("Http request retry", fmt.Sprintf("reqid=%d cost=%dms times=%dth reason=\"%s\"", reqId, cost, i, retErr.Error()))
+            misc.Debug(title, fmt.Sprintf("status=retry reqid=%d cost=%dms times=%dth reason=\"%s\"", reqId, cost, i, retErr.Error()))
         } else {
-            misc.Warn("Http request retry", fmt.Sprintf("reqid=%d cost=%dms times=%dth reason=\"invalid status code %d\"", reqId, cost, i, retRes.StatusCode))
+            misc.Debug(title, fmt.Sprintf("status=retry reqid=%d cost=%dms times=%dth reason=\"invalid status code %d\"", reqId, cost, i, retRes.StatusCode))
         }
     }
-    misc.Error("Http request failed", fmt.Sprintf("reqid=%d reason=\"retry exceed three times\"", reqId))
+    misc.Error(title, fmt.Sprintf("status=failed reqid=%d reason=\"retry exceed three times\"", reqId))
     return nil, ErrHttpFailed
 }

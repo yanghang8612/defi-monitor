@@ -1,4 +1,5 @@
 slack_webhook = "...(your slack webhook url)"
+log_level = "debug"
 [SUN]
 swap_threshold = 100_000
 liquidity_threshold = 100_000

@@ -21,6 +21,10 @@ func WrapLog(f func()) func() {
     }
 }
 
+func Debug(title, content string) {
+    record("DEBUG", title, content)
+}
+
 func Log(title, content string) {
     record("INFO", title, content)
 }
