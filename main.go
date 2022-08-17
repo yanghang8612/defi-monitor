@@ -1,14 +1,16 @@
 package main
 
 import (
-    "github.com/robfig/cron"
-    "math/rand"
     "psm-monitor/misc"
     "psm-monitor/monitor"
     "psm-monitor/net"
     "psm-monitor/slack"
+
+    "math/rand"
     "sync"
     "time"
+
+    "github.com/robfig/cron"
 )
 
 var (

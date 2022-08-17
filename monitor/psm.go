@@ -7,6 +7,8 @@ import (
     "psm-monitor/slack"
 
     "math/big"
+    "math/rand"
+    "strconv"
     "time"
 
     "github.com/robfig/cron"
@@ -35,9 +37,9 @@ func StartPSM(c *cron.Cron, _ map[string]func(event *net.Event)) {
     psm := &PSM{topic: "PSM", sTime: time.Now()}
     psm.init()
 
-    _ = c.AddFunc("*/9 * * * * ?", misc.WrapLog(psm.check))
-    _ = c.AddFunc("0 */10 * * * ?", misc.WrapLog(psm.report))
-    _ = c.AddFunc("0 0 */1 * * ?", misc.WrapLog(psm.stats))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%9))+"/9 * * * * ?", misc.WrapLog(psm.check))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(psm.report))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(psm.stats))
 }
 
 func (p *PSM) init() {

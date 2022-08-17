@@ -1,8 +1,9 @@
 package monitor
 
 import (
-    "github.com/robfig/cron"
     "psm-monitor/net"
+
+    "github.com/robfig/cron"
 )
 
 const (

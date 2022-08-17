@@ -1,14 +1,16 @@
 package monitor
 
 import (
-    "encoding/json"
     "psm-monitor/config"
     "psm-monitor/misc"
     "psm-monitor/net"
     "psm-monitor/slack"
 
+    "encoding/json"
     "fmt"
     "math/big"
+    "math/rand"
+    "strconv"
     "strings"
     "time"
 
@@ -44,9 +46,9 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
     sun := &SUN{topic: "SUN", sTime: time.Now()}
     sun.init()
 
-    _ = c.AddFunc("*/9 * * * * ?", misc.WrapLog(sun.check))
-    _ = c.AddFunc("0 */10 * * * ?", misc.WrapLog(sun.report))
-    _ = c.AddFunc("0 0 */1 * * ?", misc.WrapLog(sun.stats))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%9))+"/9 * * * * ?", misc.WrapLog(sun.check))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(sun.report))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(sun.stats))
 
     concerned[Sun2pool] = func(event *net.Event) {
         switch event.EventName {

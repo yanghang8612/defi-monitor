@@ -1,21 +1,23 @@
 package net
 
 import (
+    "psm-monitor/misc"
+
     "bytes"
     "crypto/tls"
     "encoding/json"
     "errors"
     "fmt"
-    "github.com/ethereum/go-ethereum/common/hexutil"
-    "github.com/status-im/keycard-go/hexutils"
     "io"
     "math/big"
     "math/rand"
     "net"
     "net/http"
-    "psm-monitor/misc"
     "strings"
     "time"
+
+    "github.com/ethereum/go-ethereum/common/hexutil"
+    "github.com/status-im/keycard-go/hexutils"
 )
 
 const (
