@@ -167,7 +167,7 @@ func doRequestWithRetry(req *http.Request, body []byte) ([]byte, error) {
         if retErr == nil && retRes.StatusCode == 200 {
             if body, ioErr := io.ReadAll(retRes.Body); ioErr == nil {
                 _ = retRes.Body.Close()
-                misc.Log("Http request success", fmt.Sprintf("reqid=%d cost=%dms", reqId, reqId))
+                misc.Log("Http request success", fmt.Sprintf("reqid=%d cost=%dms", reqId, cost))
                 return body, nil
             }
             _ = retRes.Body.Close()
