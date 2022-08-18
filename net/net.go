@@ -21,9 +21,10 @@ import (
 )
 
 const (
-    Endpoint    = "https://api.trongrid.io/"
-    TriggerPath = "wallet/triggerconstantcontract"
-    EventsPath  = "v1/blocks/%d/events?limit=100"
+    Endpoint         = "https://api.trongrid.io/"
+    TriggerPath      = "wallet/triggerconstantcontract"
+    BlockEventsPath  = "v1/blocks/%d/events?limit=200"
+    LatestEventsPath = "v1/blocks/latest/events?limit=200"
 )
 
 var ErrHttpFailed = errors.New("net: http request failed")
@@ -84,29 +85,42 @@ func newJsonRpcMessage(method string, params []byte) *JsonRpcMessage {
     }
 }
 
-func CallJsonRpc(method string, params []byte) []byte {
+func CallJsonRpc(method string, params []byte) ([]byte, error) {
     data, err := Post(Endpoint+"jsonrpc", newJsonRpcMessage(method, params))
     if err != nil {
-        return nil
+        return nil, err
     }
     var rspMsg JsonRpcMessage
     if err := json.Unmarshal(data, &rspMsg); err == nil {
         if len(rspMsg.Result)%2 == 1 {
-            return hexutil.MustDecode(strings.ReplaceAll(rspMsg.Result, "0x", "0x0"))
+            return hexutil.MustDecode(strings.ReplaceAll(rspMsg.Result, "0x", "0x0")), nil
         }
-        return hexutil.MustDecode(rspMsg.Result)
+        return hexutil.MustDecode(rspMsg.Result), nil
+    } else {
+        return nil, err
     }
-    return nil
 }
 
 func BlockNumber() uint64 {
-    return new(big.Int).SetBytes(CallJsonRpc("eth_blockNumber", nil)).Uint64()
+    if resData, resErr := CallJsonRpc("eth_blockNumber", nil); resErr == nil {
+        return new(big.Int).SetBytes(resData).Uint64()
+    } else {
+        return 0
+    }
 }
 
-func GetBlockEvents(blockNumber uint64) []Event {
-    allEvents := make([]Event, 0)
+func GetBlockEvents(blockNumber uint64) []*Event {
+    return getEvents(Endpoint + fmt.Sprintf(BlockEventsPath, blockNumber))
+}
+
+func GetLatestBlockEvents() []*Event {
+    return getEvents(Endpoint + LatestEventsPath)
+}
+
+func getEvents(url string) []*Event {
+    allEvents := make([]*Event, 0)
     events := Events{}
-    events.Meta.Links.Next = Endpoint + fmt.Sprintf(EventsPath, blockNumber)
+    events.Meta.Links.Next = url
     for len(events.Meta.Links.Next) != 0 {
         rspData, err := Get(events.Meta.Links.Next)
         if err != nil {

@@ -6,6 +6,7 @@ import (
     "psm-monitor/net"
     "psm-monitor/slack"
 
+    "fmt"
     "math/rand"
     "sync"
     "time"
@@ -35,7 +36,7 @@ func main() {
 
 func initApp() {
     slack.SendMsg("APP", "Monitor now started, components - [PSM, SUN, JST]")
-    trackedBlockNumber = net.BlockNumber() - 1
+    trackedBlockNumber = net.BlockNumber()
     trackedEvent = make(map[string]func(event *net.Event))
     rand.Seed(time.Now().UnixNano())
 }
@@ -43,11 +44,30 @@ func initApp() {
 func track() {
     trackLock.RLock()
     defer trackLock.RUnlock()
-    events := net.GetBlockEvents(trackedBlockNumber + 1)
-    for _, event := range events {
-        if f, ok := trackedEvent[event.Address]; ok {
-            f(&event)
+    latestBlockEvents := net.GetLatestBlockEvents()
+    if len(latestBlockEvents) > 0 {
+        latestBlockNumber := latestBlockEvents[0].BlockNumber
+        if trackedBlockNumber >= latestBlockNumber {
+            // current block has already been tracked
+            misc.Log("Track task report", fmt.Sprintf("block %d is already tracked", trackedBlockNumber))
+        } else {
+            for trackedBlockNumber < latestBlockNumber-1 {
+                trackedBlockNumber += 1
+                events := net.GetBlockEvents(trackedBlockNumber)
+                handleEvents(events)
+                misc.Log("Track task report", fmt.Sprintf("block %d is missed, has %d events", trackedBlockNumber, len(events)))
+            }
+            handleEvents(latestBlockEvents)
+            trackedBlockNumber = latestBlockNumber
+            misc.Log("Track task report", fmt.Sprintf("block %d is latest, has %d events", trackedBlockNumber, len(latestBlockEvents)))
         }
     }
-    trackedBlockNumber += 1
+}
+
+func handleEvents(events []*net.Event) {
+    for _, event := range events {
+        if f, ok := trackedEvent[event.Address]; ok {
+            f(event)
+        }
+    }
 }

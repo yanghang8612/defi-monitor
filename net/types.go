@@ -12,8 +12,8 @@ type Event struct {
 }
 
 type Events struct {
-    Success bool    `json:"success"`
-    Data    []Event `json:"data"`
+    Success bool     `json:"success"`
+    Data    []*Event `json:"data"`
     Meta    struct {
         At    uint64 `json:"at"`
         Links struct {
