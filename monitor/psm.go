@@ -68,7 +68,7 @@ func (p *PSM) handleUSDC(event *net.Event) {
 }
 
 func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
-    amount := misc.ConvertDec6(misc.ToBigInt(event.Result["value"]))
+    amount, _ := new(big.Int).SetString(event.Result["value"], 10)
     if strings.Compare(event.EventName, "BuyGem") == 0 {
         amount = amount.Neg(amount)
     }
