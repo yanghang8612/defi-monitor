@@ -19,7 +19,7 @@ const (
     USDD_DaiJoin = "TMgSSHn8APyUVViqXxtveqFEB7mBBeGqNP"
     USDT         = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
     USDT_GemJoin = "TMn5WeW8a8KH9o8rBQux4RCgckD2SuMZmS"
-    USDT_PSM     = "TMgSSHn8APyUVViqXxtveqFEB7mBBeGqNP"
+    USDT_PSM     = "TM9gWuCdFGNMiT1qTq1bgw4tNhJbsESfjA"
     USDC         = "TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8"
     USDC_GemJoin = "TRGTuMiDYAbztetdndYyMzYvtaRmucjz5q"
     USDC_PSM     = "TUcj1rpMgJCcFZULyq7uLbkmfh9xMnYTmA"
