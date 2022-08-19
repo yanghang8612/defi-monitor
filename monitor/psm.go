@@ -69,6 +69,7 @@ func (p *PSM) handleUSDC(event *net.Event) {
 
 func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
     amount, _ := new(big.Int).SetString(event.Result["value"], 10)
+    amount = misc.ConvertDec6(amount)
     if strings.Compare(event.EventName, "BuyGem") == 0 {
         amount = amount.Neg(amount)
     }
@@ -134,7 +135,7 @@ func (p *PSM) report() {
 
 func (p *PSM) stats() {
     balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), time.Now()
-    slack.SendMsg(p.topic, "Stats from `%s` ~ `%s`, USDD - %s, USDT - %s",
+    slack.SendMsg(p.topic, "Stats from `%s` ~ `%s`, USDD - %s, USDT - %s, USDC- %s",
         p.sTime.Format("15:04"), now.Format("15:04"),
         misc.ToReadableDec(p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD), true),
         misc.ToReadableDec(p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT), true),
