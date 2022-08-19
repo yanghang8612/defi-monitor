@@ -174,7 +174,7 @@ func Post(url string, d interface{}) ([]byte, error) {
 func doRequestWithRetry(req *http.Request, body []byte) ([]byte, error) {
     reqId := rand.Uint32()
     title := "Http request report"
-    misc.Log(title, fmt.Sprintf("url=%s method=%s data=%s reqid=%d", req.URL, req.Method, string(body), reqId))
+    misc.Info(title, fmt.Sprintf("url=%s method=%s data=%s reqid=%d", req.URL, req.Method, string(body), reqId))
     for i := 1; i <= 3; i++ {
         startAt := time.Now()
         retRes, retErr := defaultHTTPClient.Do(req)

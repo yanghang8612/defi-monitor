@@ -1,6 +1,8 @@
 package misc
 
 import (
+    "psm-monitor/config"
+
     "fmt"
     "reflect"
     "runtime"
@@ -9,7 +11,7 @@ import (
 )
 
 func FormatTxUrl(txHash string) string {
-    return fmt.Sprintf(":clippy:<https://tronscan.org/#/transaction/%s|TxHash>", txHash)
+    return fmt.Sprintf(":clippy:<https://tronscan.io/#/transaction/%s|TxHash>", txHash)
 }
 
 func WrapLog(f func()) func() {
@@ -17,15 +19,25 @@ func WrapLog(f func()) func() {
         startAt := time.Now()
         f()
         costMilli := time.Now().Sub(startAt).Milliseconds()
-        Log("Scheduled task report", fmt.Sprintf("task=[%s] cost=%dms", getFunctionName(f, '/'), costMilli))
+        Info("Scheduled task report", fmt.Sprintf("task=[%s] cost=%dms", getFunctionName(f, '/'), costMilli))
     }
 }
+
+type logLevel struct {
+    levelMap map[string]uint8
+}
+
+func (l *logLevel) get(s string) uint8 {
+    return l.levelMap[strings.ToUpper(s)]
+}
+
+var levels = logLevel{levelMap: map[string]uint8{"DEBUG": 0, "INFO": 1, "WARN": 2, "ERROR": 3}}
 
 func Debug(title, content string) {
     record("DEBUG", title, content)
 }
 
-func Log(title, content string) {
+func Info(title, content string) {
     record("INFO", title, content)
 }
 
@@ -38,7 +50,9 @@ func Error(title, content string) {
 }
 
 func record(level, title, content string) {
-    fmt.Printf("%-5s[%s] %-32s %s\n", level, time.Now().Format("01-02|15:04:05.000"), title, content)
+    if levels.get(level) >= levels.get(config.Get().LogLevel) {
+        fmt.Printf("%-5s[%s] %-32s %s\n", level, time.Now().Format("01-02|15:04:05.000"), title, content)
+    }
 }
 
 func getFunctionName(i interface{}, seps ...rune) string {

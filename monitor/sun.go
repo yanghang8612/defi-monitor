@@ -51,7 +51,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
     sun := &SUN{topic: "SUN", sTime: time.Now()}
     sun.init()
 
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%9))+"/9 * * * * ?", misc.WrapLog(sun.check))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */1 * * * ?", misc.WrapLog(sun.check))
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 1/10 * * * ?", misc.WrapLog(sun.report))
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(sun.stats))
 
@@ -165,7 +165,7 @@ func (s *SUN) check() {
     diffUSDD = diffUSDD.Sub(USDDPoolBalance, s.cUSDDPoolBalance)
     diffUSDT := big.NewInt(0)
     diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.cUSDTPoolBalance)
-    if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.LiquidityThreshold)) >= 0 {
+    if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.ReportThreshold)) >= 0 {
         slack.SendMsg("SUN", "Large pool balance change, USDD - %s, USDT - %s <!channel>",
             misc.ToReadableDec(diffUSDD, true),
             misc.ToReadableDec(diffUSDT, true))
@@ -219,7 +219,7 @@ func (s *SUN) getA() int64 {
         return misc.ToBigInt(result).Int64()
     } else {
         // if we cannot get current pool A value, return the pre-value
-        misc.Log("Query pool A value failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Info("Query pool A value failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
         return s.preA
     }
 
@@ -230,7 +230,7 @@ func (s *SUN) getPoolUSDDBalance() *big.Int {
         return misc.ConvertDec18(res)
     } else {
         // if we cannot get current USDD pool balance, return the c-value
-        misc.Log("Query pool USDD balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Info("Query pool USDD balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
         return s.cUSDDPoolBalance
     }
 }
@@ -240,7 +240,7 @@ func (s *SUN) getPoolUSDTBalance() *big.Int {
         return misc.ConvertDec6(res)
     } else {
         // if we cannot get current USDT pool balance, return the c-value
-        misc.Log("Query pool USDT balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Info("Query pool USDT balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
         return s.cUSDTPoolBalance
     }
 }

@@ -8,6 +8,7 @@ import (
 
 type Config struct {
     SlackWebhook string `toml:"slack_webhook"`
+    LogLevel     string `toml:"log_level"`
     SUN          SUNConfig
     PSM          PSMConfig
 }
@@ -19,8 +20,9 @@ type SUNConfig struct {
 }
 
 type PSMConfig struct {
-    GemThreshold int64 `toml:"gem_threshold"`
-    DaiThreshold int64 `toml:"dai_threshold"`
+    GemThreshold    int64 `toml:"gem_threshold"`
+    DaiThreshold    int64 `toml:"dai_threshold"`
+    ReportThreshold int64 `toml:"report_threshold"`
 }
 
 func Get() *Config {

@@ -42,24 +42,24 @@ func initApp() {
 }
 
 func track() {
-    trackLock.RLock()
-    defer trackLock.RUnlock()
+    trackLock.Lock()
+    defer trackLock.Unlock()
     latestBlockEvents := net.GetLatestBlockEvents()
     if len(latestBlockEvents) > 0 {
         latestBlockNumber := latestBlockEvents[0].BlockNumber
         if trackedBlockNumber >= latestBlockNumber {
             // current block has already been tracked
-            misc.Log("Track task report", fmt.Sprintf("block %d is already tracked", trackedBlockNumber))
+            misc.Info("Track task report", fmt.Sprintf("block %d is already tracked", trackedBlockNumber))
         } else {
             for trackedBlockNumber < latestBlockNumber-1 {
                 trackedBlockNumber += 1
                 events := net.GetBlockEvents(trackedBlockNumber)
                 handleEvents(events)
-                misc.Log("Track task report", fmt.Sprintf("block %d is missed, has %d events", trackedBlockNumber, len(events)))
+                misc.Info("Track task report", fmt.Sprintf("block %d is missed, has %d events", trackedBlockNumber, len(events)))
             }
             handleEvents(latestBlockEvents)
             trackedBlockNumber = latestBlockNumber
-            misc.Log("Track task report", fmt.Sprintf("block %d is latest, has %d events", trackedBlockNumber, len(latestBlockEvents)))
+            misc.Info("Track task report", fmt.Sprintf("block %d is latest, has %d events", trackedBlockNumber, len(latestBlockEvents)))
         }
     }
 }
