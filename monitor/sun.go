@@ -215,11 +215,11 @@ func (s *SUN) stats() {
 }
 
 func (s *SUN) getA() int64 {
-    if result, err := net.Query(Sun2pool, "A()", ""); err == nil {
+    if result, err := net.Trigger(Sun2pool, "A()", ""); err == nil {
         return misc.ToBigInt(result).Int64()
     } else {
         // if we cannot get current pool A value, return the pre-value
-        misc.Info("Query pool A value failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Info("Trigger pool A value failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
         return s.preA
     }
 
@@ -230,7 +230,7 @@ func (s *SUN) getPoolUSDDBalance() *big.Int {
         return misc.ConvertDec18(res)
     } else {
         // if we cannot get current USDD pool balance, return the c-value
-        misc.Info("Query pool USDD balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Info("Trigger pool USDD balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
         return s.cUSDDPoolBalance
     }
 }
@@ -240,13 +240,13 @@ func (s *SUN) getPoolUSDTBalance() *big.Int {
         return misc.ConvertDec6(res)
     } else {
         // if we cannot get current USDT pool balance, return the c-value
-        misc.Info("Query pool USDT balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Info("Trigger pool USDT balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
         return s.cUSDTPoolBalance
     }
 }
 
 func (s *SUN) getPoolBalanceOfIndex(i uint) (*big.Int, error) {
-    result, err := net.Query(Sun2pool, "balances(uint256)", hexutils.BytesToHex(uint256.NewInt(uint64(i)).PaddedBytes(32)))
+    result, err := net.Trigger(Sun2pool, "balances(uint256)", hexutils.BytesToHex(uint256.NewInt(uint64(i)).PaddedBytes(32)))
     if err != nil {
         return big.NewInt(0), err
     }

@@ -52,30 +52,6 @@ var defaultHTTPClient = &http.Client{
     Timeout:   3 * time.Second,
 }
 
-type Request struct {
-    OwnerAddress     string `json:"owner_address"`
-    ContractAddress  string `json:"contract_address"`
-    FunctionSelector string `json:"function_selector"`
-    Parameter        string `json:"parameter"`
-    Visible          bool   `json:"visible"`
-}
-
-type QueryResponse struct {
-    Result    []string `json:"constant_result"`
-    RpcResult struct {
-        TriggerResult bool `json:"result"`
-    } `json:"result"`
-}
-
-type JsonRpcMessage struct {
-    Version string `json:"jsonrpc,omitempty"`
-    ID      int64  `json:"id,omitempty"`
-    Method  string `json:"method,omitempty"`
-    Params  string `json:"params,omitempty"`
-    Error   error  `json:"error,omitempty"`
-    Result  string `json:"result,omitempty"`
-}
-
 func newJsonRpcMessage(method string, params []byte) *JsonRpcMessage {
     return &JsonRpcMessage{
         Version: "2.0",
@@ -134,8 +110,8 @@ func getEvents(url string) []*Event {
     return allEvents
 }
 
-func Query(addr, selector, param string) (string, error) {
-    resData, err := Post(Endpoint+TriggerPath, Request{
+func Trigger(addr, selector, param string) (string, error) {
+    resData, err := Post(Endpoint+TriggerPath, TriggerRequest{
         OwnerAddress:     "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
         ContractAddress:  addr,
         FunctionSelector: selector,
@@ -145,7 +121,7 @@ func Query(addr, selector, param string) (string, error) {
     if err != nil {
         return "", err
     }
-    var queryRes QueryResponse
+    var queryRes TriggerResponse
     _ = json.Unmarshal(resData, &queryRes)
     if !queryRes.RpcResult.TriggerResult {
         return "", ErrQueryFailed

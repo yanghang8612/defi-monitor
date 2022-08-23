@@ -144,7 +144,7 @@ func (p *PSM) stats() {
 }
 
 func (p *PSM) getUSDDBalance() *big.Int {
-    result, err := net.Query(USDD_DaiJoin, "getUsddBalance()", "")
+    result, err := net.Trigger(USDD_DaiJoin, "getUsddBalance()", "")
     if err != nil {
         // if we cannot get current USDD balance, return the pre value
         slack.ReportPanic(err.Error())
@@ -154,7 +154,7 @@ func (p *PSM) getUSDDBalance() *big.Int {
 }
 
 func (p *PSM) getUSDTBalance() *big.Int {
-    result, err := net.Query(USDT, "balanceOf(address)", misc.ToEthAddr(USDT_GemJoin))
+    result, err := net.Trigger(USDT, "balanceOf(address)", misc.ToEthAddr(USDT_GemJoin))
     if err != nil {
         // if we cannot get current USDT balance, return the c-value
         slack.ReportPanic(err.Error())
@@ -164,7 +164,7 @@ func (p *PSM) getUSDTBalance() *big.Int {
 }
 
 func (p *PSM) getUSDCBalance() *big.Int {
-    result, err := net.Query(USDC, "balanceOf(address)", misc.ToEthAddr(USDC_GemJoin))
+    result, err := net.Trigger(USDC, "balanceOf(address)", misc.ToEthAddr(USDC_GemJoin))
     if err != nil {
         // if we cannot get current USDC balance, return the c-value
         slack.ReportPanic(err.Error())
