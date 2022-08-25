@@ -10,3 +10,7 @@ func ToEthAddr(tronAddr string) string {
     ethAddr, _, _ := base58.CheckDecode(tronAddr)
     return hexutils.BytesToHex(common.BytesToAddress(ethAddr).Hash().Bytes())
 }
+
+func ToTronAddr(ethAddr string) string {
+    return base58.CheckEncode(common.BytesToAddress(common.FromHex(ethAddr)).Bytes(), 0x41)
+}

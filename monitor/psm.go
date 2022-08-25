@@ -74,8 +74,10 @@ func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
         amount = amount.Neg(amount)
     }
     if amount.CmpAbs(big.NewInt(config.Get().PSM.GemThreshold)) >= 0 {
-        slack.SendMsg(p.topic, "Large %s - %s %s, %s <!channel>", event.EventName, ilk,
-            misc.ToReadableDec(amount, true),
+        slack.SendMsg(p.topic, "Large %s, %s, %s, %s <!channel>",
+            event.EventName,
+            misc.FormatTokenAmtChange(ilk, amount),
+            misc.FormatUser(event.Result["owner"]),
             misc.FormatTxUrl(event.TransactionHash))
     }
 }
@@ -94,7 +96,8 @@ func (p *PSM) check() {
     diffOfUSDT := big.NewInt(0)
     diffOfUSDT = diffOfUSDT.Sub(balanceOfUSDT, p.cBalanceOfUSDT)
     if diffOfUSDT.CmpAbs(reportThreshold) >= 0 {
-        slack.SendMsg(p.topic, "Large gem balance change, USDT - %s <!channel>", misc.ToReadableDec(diffOfUSDT, true))
+        slack.SendMsg(p.topic, "Large gem balance change, %s <!channel>",
+            misc.FormatTokenAmtChange("USDT", diffOfUSDT))
         p.report()
     }
     p.cBalanceOfUSDT = balanceOfUSDT
@@ -103,7 +106,8 @@ func (p *PSM) check() {
     diffOfUSDC := big.NewInt(0)
     diffOfUSDC = diffOfUSDC.Sub(balanceOfUSDC, p.cBalanceOfUSDC)
     if diffOfUSDC.CmpAbs(reportThreshold) >= 0 {
-        slack.SendMsg(p.topic, "Large gem balance change, USDC - %s <!channel>", misc.ToReadableDec(diffOfUSDC, true))
+        slack.SendMsg(p.topic, "Large gem balance change, %s <!channel>",
+            misc.FormatTokenAmtChange("USDC", diffOfUSDC))
         p.report()
     }
     p.cBalanceOfUSDC = balanceOfUSDC
@@ -114,7 +118,7 @@ func (p *PSM) check() {
     if !p.isLowUSDDWarned && balanceOfUSDD.CmpAbs(daiThreshold) < 0 {
         p.isLowUSDDWarned = true
         slack.SendMsg(p.topic, "Vault remained USDD balance lower than %s <!channel>",
-            misc.ToReadableDec(daiThreshold, false))
+            misc.ToReadableDec(daiThreshold))
     }
     if balanceOfUSDD.CmpAbs(daiThreshold) >= 0 {
         p.isLowUSDDWarned = false
@@ -125,21 +129,21 @@ func (p *PSM) check() {
 func (p *PSM) report() {
     balanceOfUSDD, balanceOfUSDT, balanceOfUSDC := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance()
     if balanceOfUSDD.Cmp(p.rBalanceOfUSDD) != 0 || balanceOfUSDT.Cmp(p.rBalanceOfUSDT) != 0 || balanceOfUSDC.Cmp(p.rBalanceOfUSDC) != 0 {
-        slack.SendMsg(p.topic, "USDD - %s, USDT - %s, USDC - %s",
-            misc.ToReadableDec(balanceOfUSDD, false),
-            misc.ToReadableDec(balanceOfUSDT, false),
-            misc.ToReadableDec(balanceOfUSDC, false))
+        slack.SendMsg(p.topic, "%s, %s, %s",
+            misc.FormatTokenAmtChange("USDD", balanceOfUSDD),
+            misc.FormatTokenAmtChange("USDT", balanceOfUSDT),
+            misc.FormatTokenAmtChange("USDC", balanceOfUSDC))
     }
     p.rBalanceOfUSDD, p.rBalanceOfUSDT, p.rBalanceOfUSDC = balanceOfUSDD, balanceOfUSDT, balanceOfUSDC
 }
 
 func (p *PSM) stats() {
     balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), time.Now()
-    slack.SendMsg(p.topic, "Stats from `%s` ~ `%s`, USDD - %s, USDT - %s, USDC- %s",
+    slack.SendMsg(p.topic, "Stats from `%s` ~ `%s`, %s, %s, %s",
         p.sTime.Format("15:04"), now.Format("15:04"),
-        misc.ToReadableDec(p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD), true),
-        misc.ToReadableDec(p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT), true),
-        misc.ToReadableDec(p.sBalanceOfUSDC.Sub(balanceOfUSDC, p.sBalanceOfUSDC), true))
+        misc.FormatTokenAmtChange("USDD", p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD)),
+        misc.FormatTokenAmtChange("USDT", p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT)),
+        misc.FormatTokenAmtChange("USDC", p.sBalanceOfUSDC.Sub(balanceOfUSDC, p.sBalanceOfUSDC)))
     p.sBalanceOfUSDD, p.sBalanceOfUSDT, p.sBalanceOfUSDC, p.sTime = balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now
 }
 
@@ -171,8 +175,4 @@ func (p *PSM) getUSDCBalance() *big.Int {
         return p.cBalanceOfUSDC
     }
     return misc.ConvertDec6(misc.ToBigInt(result))
-}
-
-func queryVat(ilk string) {
-
 }

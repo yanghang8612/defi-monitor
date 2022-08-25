@@ -4,11 +4,36 @@ import (
     "psm-monitor/config"
 
     "fmt"
+    "math/big"
     "reflect"
     "runtime"
     "strings"
     "time"
 )
+
+var tokenMapping = map[string]string{"usdt": ":usdtlogo:", "usdc": ":usdclogo:", "usdd": ":usdd:"}
+
+func GetTokenLogo(token string) string {
+    return tokenMapping[strings.ToLower(token)]
+}
+
+func FormatTokenAmtChange(token string, amt *big.Int) string {
+    tokenLogo := GetTokenLogo(token)
+    if amt.Sign() > 0 {
+        return tokenLogo + " - `" + ToReadableDec(amt) + "` :arrow_up_small:"
+    } else if amt.Sign() < 0 {
+        return tokenLogo + " - `" + ToReadableDec(amt)[1:] + "` :arrow_down_small:"
+    } else {
+        return tokenLogo + " - `0` :arrows_counterclockwise:"
+    }
+}
+
+func FormatUser(addr string) string {
+    if strings.HasPrefix(addr, "T") {
+        return ":clown_face: - " + addr
+    }
+    return ":clown_face: - " + ToTronAddr(addr)
+}
 
 func FormatTxUrl(txHash string) string {
     return fmt.Sprintf(":clippy:<https://tronscan.io/#/transaction/%s|TxHash>", txHash)

@@ -81,16 +81,18 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
             diff = diff.Sub(soldAmount, boughtAmount)
             threshold := big.NewInt(config.Get().SUN.SwapThreshold)
             if boughtAmount.Cmp(threshold) > 0 {
-                msg := fmt.Sprintf("Large exchange `%s => %s` - %s %s sold, %s %s bought, ",
-                    soldToken, boughtToken,
-                    misc.ToReadableDec(soldAmount, true), soldToken,
-                    misc.ToReadableDec(boughtAmount.Neg(boughtAmount), true), boughtToken)
+                msg := fmt.Sprintf("Large exchange, %s - `%s` => %s - `%s`, %s, ",
+                    misc.GetTokenLogo(soldToken), misc.ToReadableDec(soldAmount),
+                    misc.GetTokenLogo(boughtToken), misc.ToReadableDec(boughtAmount),
+                    misc.FormatUser(event.Result["buyer"]))
                 if diff.Sign() > 0 {
-                    msg += fmt.Sprintf(":tada: %s %s lost, %s <!channel>",
-                        misc.ToReadableDec(diff, false), boughtToken, misc.FormatTxUrl(event.TransactionHash))
+                    msg += fmt.Sprintf("lose %s - `%s`, %s <!channel>",
+                        misc.GetTokenLogo(boughtToken), misc.ToReadableDec(diff),
+                        misc.FormatTxUrl(event.TransactionHash))
                 } else if diff.Sign() < 0 {
-                    msg += fmt.Sprintf(":anger: %s %s earned, %s <!channel>",
-                        misc.ToReadableDec(diff.Abs(diff), false), boughtToken, misc.FormatTxUrl(event.TransactionHash))
+                    msg += fmt.Sprintf("earn %s - `%s`, %s <!channel>",
+                        misc.GetTokenLogo(boughtToken), misc.ToReadableDec(diff.Abs(diff)),
+                        misc.FormatTxUrl(event.TransactionHash))
                 }
                 slack.SendMsg(sun.topic, msg)
             }
@@ -115,16 +117,17 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
                     tokenName = "USDT"
                 }
                 if tokenAmount.Cmp(threshold) >= 0 {
-                    slack.SendMsg(sun.topic, "Large %s - %s %s, %s <!channel>",
-                        event.EventName, tokenName,
-                        misc.ToReadableDec(tokenAmount.Neg(tokenAmount), true),
+                    slack.SendMsg(sun.topic, "Large %s, %s, %s, %s <!channel>",
+                        event.EventName,
+                        misc.FormatTokenAmtChange(tokenName, tokenAmount.Neg(tokenAmount)),
+                        misc.FormatUser(event.Result["provider"]),
                         misc.FormatTxUrl(event.TransactionHash))
                 }
             }
         case "RampA":
             oldA, _ := new(big.Int).SetString(event.Result["old_A"], 10)
             newA, _ := new(big.Int).SetString(event.Result["new_A"], 10)
-            slack.SendMsg(sun.topic, "Ramp A from  `%d`  =>  `%d`, %s <!channel>",
+            slack.SendMsg(sun.topic, "Ramp A from  `%d` => `%d`, %s <!channel>",
                 oldA, newA, misc.FormatTxUrl(event.TransactionHash))
         }
     }
@@ -144,10 +147,11 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
     }
     threshold := big.NewInt(config.Get().SUN.LiquidityThreshold)
     if changedLiquidityOfUSDD.CmpAbs(threshold) >= 0 || changedLiquidityOfUSDT.CmpAbs(threshold) >= 0 {
-        slack.SendMsg(s.topic, "Large %s - USDD %s, USDT %s, %s <!channel>",
+        slack.SendMsg(s.topic, "Large %s, %s, %s, %s, %s <!channel>",
             event.EventName,
-            misc.ToReadableDec(changedLiquidityOfUSDD, true),
-            misc.ToReadableDec(changedLiquidityOfUSDT, true),
+            misc.FormatTokenAmtChange("USDD", changedLiquidityOfUSDD),
+            misc.FormatTokenAmtChange("USDT", changedLiquidityOfUSDT),
+            misc.FormatUser(event.Result["provider"]),
             misc.FormatTxUrl(event.TransactionHash))
     }
 }
@@ -166,9 +170,9 @@ func (s *SUN) check() {
     diffUSDT := big.NewInt(0)
     diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.cUSDTPoolBalance)
     if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.ReportThreshold)) >= 0 {
-        slack.SendMsg("SUN", "Large pool balance change, USDD - %s, USDT - %s <!channel>",
-            misc.ToReadableDec(diffUSDD, true),
-            misc.ToReadableDec(diffUSDT, true))
+        slack.SendMsg("SUN", "Large pool balance change, %s, %s <!channel>",
+            misc.FormatTokenAmtChange("USDD", diffUSDD),
+            misc.FormatTokenAmtChange("USDT", diffUSDT))
     }
     s.cUSDDPoolBalance, s.cUSDTPoolBalance = USDDPoolBalance, USDTPoolBalance
 }
@@ -193,9 +197,9 @@ func (s *SUN) report() {
         Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
     }
     if USDDPoolBalance.Cmp(s.rUSDDPoolBalance) != 0 || USDTPoolBalance.Cmp(s.rUSDTPoolBalance) != 0 {
-        slack.SendMsg("SUN", "USDD - %s, USDT - %s, A - `%d`, Ratio - "+Format,
-            misc.ToReadableDec(USDDPoolBalance, false),
-            misc.ToReadableDec(USDTPoolBalance, false),
+        slack.SendMsg("SUN", "%s - `%s`, %s - `%s`, A - `%d`, Ratio - "+Format,
+            misc.GetTokenLogo("USDD"), misc.ToReadableDec(USDDPoolBalance),
+            misc.GetTokenLogo("USDT"), misc.ToReadableDec(USDTPoolBalance),
             curA,
             USDDFloat64*100/TotalFloat64,
             USDTFloat64*100/TotalFloat64,
@@ -207,10 +211,10 @@ func (s *SUN) report() {
 
 func (s *SUN) stats() {
     USDDPoolBalance, USDTPoolBalance, now := s.getPoolUSDDBalance(), s.getPoolUSDTBalance(), time.Now()
-    slack.SendMsg("SUN", "Stats from `%s` ~ `%s`, USDD - %s, USDT - %s",
+    slack.SendMsg("SUN", "Stats from `%s` ~ `%s`, %s, %s",
         s.sTime.Format("15:04"), now.Format("15:04"),
-        misc.ToReadableDec(s.sUSDDPoolBalance.Sub(USDDPoolBalance, s.sUSDDPoolBalance), true),
-        misc.ToReadableDec(s.sUSDTPoolBalance.Sub(USDTPoolBalance, s.sUSDTPoolBalance), true))
+        misc.FormatTokenAmtChange("USDD", s.sUSDDPoolBalance.Sub(USDDPoolBalance, s.sUSDDPoolBalance)),
+        misc.FormatTokenAmtChange("USDT", s.sUSDTPoolBalance.Sub(USDTPoolBalance, s.sUSDTPoolBalance)))
     s.sUSDDPoolBalance, s.sUSDTPoolBalance, s.sTime = USDDPoolBalance, USDTPoolBalance, now
 }
 
