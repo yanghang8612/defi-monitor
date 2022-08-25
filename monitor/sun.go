@@ -84,7 +84,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
                 msg := fmt.Sprintf("Large exchange, %s => %s, %s, ",
                     misc.FormatTokenAmt(soldToken, soldAmount, false),
                     misc.FormatTokenAmt(boughtToken, boughtAmount, false),
-                    misc.FormatUser(event.Result["buyer"]))
+                    misc.FormatUser(net.GetTxFrom(event.TransactionHash)))
                 if diff.Sign() > 0 {
                     msg += fmt.Sprintf("lose %s, %s <!channel>",
                         misc.FormatTokenAmt(boughtToken, diff, false),
@@ -120,7 +120,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
                     slack.SendMsg(sun.topic, "Large %s, %s, %s, %s <!channel>",
                         event.EventName,
                         misc.FormatTokenAmt(tokenName, tokenAmount.Neg(tokenAmount), true),
-                        misc.FormatUser(event.Result["provider"]),
+                        misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
                         misc.FormatTxUrl(event.TransactionHash))
                 }
             }
@@ -151,7 +151,7 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
             event.EventName,
             misc.FormatTokenAmt("USDD", changedLiquidityOfUSDD, true),
             misc.FormatTokenAmt("USDT", changedLiquidityOfUSDT, true),
-            misc.FormatUser(event.Result["provider"]),
+            misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
             misc.FormatTxUrl(event.TransactionHash))
     }
 }

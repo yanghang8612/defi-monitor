@@ -77,7 +77,7 @@ func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
         slack.SendMsg(p.topic, "Large %s, %s, %s, %s <!channel>",
             event.EventName,
             misc.FormatTokenAmt(ilk, amount, true),
-            misc.FormatUser(event.Result["owner"]),
+            misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
             misc.FormatTxUrl(event.TransactionHash))
     }
 }
