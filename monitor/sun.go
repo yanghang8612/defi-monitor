@@ -81,17 +81,17 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
             diff = diff.Sub(soldAmount, boughtAmount)
             threshold := big.NewInt(config.Get().SUN.SwapThreshold)
             if boughtAmount.Cmp(threshold) > 0 {
-                msg := fmt.Sprintf("Large exchange, %s - `%s` => %s - `%s`, %s, ",
-                    misc.GetTokenLogo(soldToken), misc.ToReadableDec(soldAmount),
-                    misc.GetTokenLogo(boughtToken), misc.ToReadableDec(boughtAmount),
+                msg := fmt.Sprintf("Large exchange, %s => %s, %s, ",
+                    misc.FormatTokenAmt(soldToken, soldAmount, false),
+                    misc.FormatTokenAmt(boughtToken, boughtAmount, false),
                     misc.FormatUser(event.Result["buyer"]))
                 if diff.Sign() > 0 {
-                    msg += fmt.Sprintf("lose %s - `%s`, %s <!channel>",
-                        misc.GetTokenLogo(boughtToken), misc.ToReadableDec(diff),
+                    msg += fmt.Sprintf("lose %s, %s <!channel>",
+                        misc.FormatTokenAmt(boughtToken, diff, false),
                         misc.FormatTxUrl(event.TransactionHash))
                 } else if diff.Sign() < 0 {
-                    msg += fmt.Sprintf("earn %s - `%s`, %s <!channel>",
-                        misc.GetTokenLogo(boughtToken), misc.ToReadableDec(diff.Abs(diff)),
+                    msg += fmt.Sprintf("earn %s, %s <!channel>",
+                        misc.FormatTokenAmt(boughtToken, diff.Abs(diff), false),
                         misc.FormatTxUrl(event.TransactionHash))
                 }
                 slack.SendMsg(sun.topic, msg)
@@ -119,7 +119,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
                 if tokenAmount.Cmp(threshold) >= 0 {
                     slack.SendMsg(sun.topic, "Large %s, %s, %s, %s <!channel>",
                         event.EventName,
-                        misc.FormatTokenAmtChange(tokenName, tokenAmount.Neg(tokenAmount)),
+                        misc.FormatTokenAmt(tokenName, tokenAmount.Neg(tokenAmount), true),
                         misc.FormatUser(event.Result["provider"]),
                         misc.FormatTxUrl(event.TransactionHash))
                 }
@@ -149,8 +149,8 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
     if changedLiquidityOfUSDD.CmpAbs(threshold) >= 0 || changedLiquidityOfUSDT.CmpAbs(threshold) >= 0 {
         slack.SendMsg(s.topic, "Large %s, %s, %s, %s, %s <!channel>",
             event.EventName,
-            misc.FormatTokenAmtChange("USDD", changedLiquidityOfUSDD),
-            misc.FormatTokenAmtChange("USDT", changedLiquidityOfUSDT),
+            misc.FormatTokenAmt("USDD", changedLiquidityOfUSDD, true),
+            misc.FormatTokenAmt("USDT", changedLiquidityOfUSDT, true),
             misc.FormatUser(event.Result["provider"]),
             misc.FormatTxUrl(event.TransactionHash))
     }
@@ -171,8 +171,8 @@ func (s *SUN) check() {
     diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.cUSDTPoolBalance)
     if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.ReportThreshold)) >= 0 {
         slack.SendMsg("SUN", "Large pool balance change, %s, %s <!channel>",
-            misc.FormatTokenAmtChange("USDD", diffUSDD),
-            misc.FormatTokenAmtChange("USDT", diffUSDT))
+            misc.FormatTokenAmt("USDD", diffUSDD, true),
+            misc.FormatTokenAmt("USDT", diffUSDT, true))
     }
     s.cUSDDPoolBalance, s.cUSDTPoolBalance = USDDPoolBalance, USDTPoolBalance
 }
@@ -197,9 +197,9 @@ func (s *SUN) report() {
         Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
     }
     if USDDPoolBalance.Cmp(s.rUSDDPoolBalance) != 0 || USDTPoolBalance.Cmp(s.rUSDTPoolBalance) != 0 {
-        slack.SendMsg("SUN", "%s - `%s`, %s - `%s`, A - `%d`, Ratio - "+Format,
-            misc.GetTokenLogo("USDD"), misc.ToReadableDec(USDDPoolBalance),
-            misc.GetTokenLogo("USDT"), misc.ToReadableDec(USDTPoolBalance),
+        slack.SendMsg("SUN", "%s, %s, A - `%d`, Ratio - "+Format,
+            misc.FormatTokenAmt("USDD", USDDPoolBalance, false),
+            misc.FormatTokenAmt("USDT", USDTPoolBalance, false),
             curA,
             USDDFloat64*100/TotalFloat64,
             USDTFloat64*100/TotalFloat64,
@@ -213,8 +213,8 @@ func (s *SUN) stats() {
     USDDPoolBalance, USDTPoolBalance, now := s.getPoolUSDDBalance(), s.getPoolUSDTBalance(), time.Now()
     slack.SendMsg("SUN", "Stats from `%s` ~ `%s`, %s, %s",
         s.sTime.Format("15:04"), now.Format("15:04"),
-        misc.FormatTokenAmtChange("USDD", s.sUSDDPoolBalance.Sub(USDDPoolBalance, s.sUSDDPoolBalance)),
-        misc.FormatTokenAmtChange("USDT", s.sUSDTPoolBalance.Sub(USDTPoolBalance, s.sUSDTPoolBalance)))
+        misc.FormatTokenAmt("USDD", s.sUSDDPoolBalance.Sub(USDDPoolBalance, s.sUSDDPoolBalance), true),
+        misc.FormatTokenAmt("USDT", s.sUSDTPoolBalance.Sub(USDTPoolBalance, s.sUSDTPoolBalance), true))
     s.sUSDDPoolBalance, s.sUSDTPoolBalance, s.sTime = USDDPoolBalance, USDTPoolBalance, now
 }
 

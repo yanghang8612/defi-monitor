@@ -76,7 +76,7 @@ func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
     if amount.CmpAbs(big.NewInt(config.Get().PSM.GemThreshold)) >= 0 {
         slack.SendMsg(p.topic, "Large %s, %s, %s, %s <!channel>",
             event.EventName,
-            misc.FormatTokenAmtChange(ilk, amount),
+            misc.FormatTokenAmt(ilk, amount, true),
             misc.FormatUser(event.Result["owner"]),
             misc.FormatTxUrl(event.TransactionHash))
     }
@@ -97,7 +97,7 @@ func (p *PSM) check() {
     diffOfUSDT = diffOfUSDT.Sub(balanceOfUSDT, p.cBalanceOfUSDT)
     if diffOfUSDT.CmpAbs(reportThreshold) >= 0 {
         slack.SendMsg(p.topic, "Large gem balance change, %s <!channel>",
-            misc.FormatTokenAmtChange("USDT", diffOfUSDT))
+            misc.FormatTokenAmt("USDT", diffOfUSDT, true))
         p.report()
     }
     p.cBalanceOfUSDT = balanceOfUSDT
@@ -107,7 +107,7 @@ func (p *PSM) check() {
     diffOfUSDC = diffOfUSDC.Sub(balanceOfUSDC, p.cBalanceOfUSDC)
     if diffOfUSDC.CmpAbs(reportThreshold) >= 0 {
         slack.SendMsg(p.topic, "Large gem balance change, %s <!channel>",
-            misc.FormatTokenAmtChange("USDC", diffOfUSDC))
+            misc.FormatTokenAmt("USDC", diffOfUSDC, true))
         p.report()
     }
     p.cBalanceOfUSDC = balanceOfUSDC
@@ -130,9 +130,9 @@ func (p *PSM) report() {
     balanceOfUSDD, balanceOfUSDT, balanceOfUSDC := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance()
     if balanceOfUSDD.Cmp(p.rBalanceOfUSDD) != 0 || balanceOfUSDT.Cmp(p.rBalanceOfUSDT) != 0 || balanceOfUSDC.Cmp(p.rBalanceOfUSDC) != 0 {
         slack.SendMsg(p.topic, "%s, %s, %s",
-            misc.FormatTokenAmtChange("USDD", balanceOfUSDD),
-            misc.FormatTokenAmtChange("USDT", balanceOfUSDT),
-            misc.FormatTokenAmtChange("USDC", balanceOfUSDC))
+            misc.FormatTokenAmt("USDD", balanceOfUSDD, false),
+            misc.FormatTokenAmt("USDT", balanceOfUSDT, false),
+            misc.FormatTokenAmt("USDC", balanceOfUSDC, false))
     }
     p.rBalanceOfUSDD, p.rBalanceOfUSDT, p.rBalanceOfUSDC = balanceOfUSDD, balanceOfUSDT, balanceOfUSDC
 }
@@ -141,9 +141,9 @@ func (p *PSM) stats() {
     balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), time.Now()
     slack.SendMsg(p.topic, "Stats from `%s` ~ `%s`, %s, %s, %s",
         p.sTime.Format("15:04"), now.Format("15:04"),
-        misc.FormatTokenAmtChange("USDD", p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD)),
-        misc.FormatTokenAmtChange("USDT", p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT)),
-        misc.FormatTokenAmtChange("USDC", p.sBalanceOfUSDC.Sub(balanceOfUSDC, p.sBalanceOfUSDC)))
+        misc.FormatTokenAmt("USDD", p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD), true),
+        misc.FormatTokenAmt("USDT", p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT), true),
+        misc.FormatTokenAmt("USDC", p.sBalanceOfUSDC.Sub(balanceOfUSDC, p.sBalanceOfUSDC), true))
     p.sBalanceOfUSDD, p.sBalanceOfUSDT, p.sBalanceOfUSDC, p.sTime = balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now
 }
 

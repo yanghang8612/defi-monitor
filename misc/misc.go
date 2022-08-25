@@ -17,22 +17,25 @@ func GetTokenLogo(token string) string {
     return tokenMapping[strings.ToLower(token)]
 }
 
-func FormatTokenAmtChange(token string, amt *big.Int) string {
-    tokenLogo := GetTokenLogo(token)
-    if amt.Sign() > 0 {
-        return tokenLogo + " - `" + ToReadableDec(amt) + "` :arrow_up_small:"
-    } else if amt.Sign() < 0 {
-        return tokenLogo + " - `" + ToReadableDec(amt)[1:] + "` :arrow_down_small:"
-    } else {
-        return tokenLogo + " - `0` :arrows_counterclockwise:"
+func FormatTokenAmt(token string, amt *big.Int, isDiff bool) string {
+    text := fmt.Sprintf("%s - `%s`", GetTokenLogo(token), ToReadableDec(big.NewInt(0).Abs(amt)))
+    if isDiff {
+        if amt.Sign() > 0 {
+            text += " :arrow_up_small:"
+        } else if amt.Sign() < 0 {
+            text += " :arrow_down_small:"
+        } else {
+            text += " :arrows_counterclockwise:"
+        }
     }
+    return text
 }
 
 func FormatUser(addr string) string {
-    if strings.HasPrefix(addr, "T") {
-        return ":clown_face: - " + addr
+    if !strings.HasPrefix(addr, "T") {
+        addr = ToTronAddr(addr)
     }
-    return ":clown_face: - " + ToTronAddr(addr)
+    return fmt.Sprintf(":clown_face: - `%s`", addr)
 }
 
 func FormatTxUrl(txHash string) string {
