@@ -112,9 +112,9 @@ func getEvents(url string) []*Event {
 
 func GetTxFrom(id string) string {
     if resData, netErr := Get("https://apilist.tronscanapi.com/api/transaction-info?hash=" + id); netErr == nil {
-        result := make(map[string]json.RawMessage)
+        result := make(map[string]interface{})
         if jsonErr := json.Unmarshal(resData, &result); jsonErr == nil {
-            return string(result["ownerAddress"])
+            return result["ownerAddress"].(string)
         }
     }
     return ""
