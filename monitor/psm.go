@@ -129,7 +129,7 @@ func (p *PSM) check() {
 func (p *PSM) report() {
     balanceOfUSDD, balanceOfUSDT, balanceOfUSDC := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance()
     if balanceOfUSDD.Cmp(p.rBalanceOfUSDD) != 0 || balanceOfUSDT.Cmp(p.rBalanceOfUSDT) != 0 || balanceOfUSDC.Cmp(p.rBalanceOfUSDC) != 0 {
-        slack.SendMsg(p.topic, "%s, %s, %s",
+        slack.SendMsg(p.topic, "State Report, %s, %s, %s",
             misc.FormatTokenAmt("USDD", balanceOfUSDD, false),
             misc.FormatTokenAmt("USDT", balanceOfUSDT, false),
             misc.FormatTokenAmt("USDC", balanceOfUSDC, false))
@@ -139,7 +139,7 @@ func (p *PSM) report() {
 
 func (p *PSM) stats() {
     balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), time.Now()
-    slack.SendMsg(p.topic, "Stats from `%s` ~ `%s`, %s, %s, %s",
+    slack.SendMsg(p.topic, "Stats Report, from `%s` ~ `%s`, %s, %s, %s",
         p.sTime.Format("15:04"), now.Format("15:04"),
         misc.FormatTokenAmt("USDD", p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD), true),
         misc.FormatTokenAmt("USDT", p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT), true),

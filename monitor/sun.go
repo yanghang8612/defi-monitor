@@ -170,7 +170,7 @@ func (s *SUN) check() {
     diffUSDT := big.NewInt(0)
     diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.cUSDTPoolBalance)
     if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.ReportThreshold)) >= 0 {
-        slack.SendMsg("SUN", "Large pool balance change, %s, %s <!channel>",
+        slack.SendMsg(s.topic, "Large pool balance change, %s, %s <!channel>",
             misc.FormatTokenAmt("USDD", diffUSDD, true),
             misc.FormatTokenAmt("USDT", diffUSDT, true))
     }
@@ -197,7 +197,7 @@ func (s *SUN) report() {
         Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
     }
     if USDDPoolBalance.Cmp(s.rUSDDPoolBalance) != 0 || USDTPoolBalance.Cmp(s.rUSDTPoolBalance) != 0 {
-        slack.SendMsg("SUN", "%s, %s, A - `%d`, Ratio - "+Format,
+        slack.SendMsg(s.topic, "State Report, %s, %s, A - `%d`, Ratio - "+Format,
             misc.FormatTokenAmt("USDD", USDDPoolBalance, false),
             misc.FormatTokenAmt("USDT", USDTPoolBalance, false),
             curA,
@@ -211,7 +211,7 @@ func (s *SUN) report() {
 
 func (s *SUN) stats() {
     USDDPoolBalance, USDTPoolBalance, now := s.getPoolUSDDBalance(), s.getPoolUSDTBalance(), time.Now()
-    slack.SendMsg("SUN", "Stats from `%s` ~ `%s`, %s, %s",
+    slack.SendMsg(s.topic, "Stats Report, from `%s` ~ `%s`, %s, %s",
         s.sTime.Format("15:04"), now.Format("15:04"),
         misc.FormatTokenAmt("USDD", s.sUSDDPoolBalance.Sub(USDDPoolBalance, s.sUSDDPoolBalance), true),
         misc.FormatTokenAmt("USDT", s.sUSDTPoolBalance.Sub(USDTPoolBalance, s.sUSDTPoolBalance), true))
