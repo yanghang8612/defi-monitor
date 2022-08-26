@@ -51,9 +51,9 @@ func StartPSM(c *cron.Cron, concerned map[string]func(event *net.Event)) {
     psm := &PSM{topic: "PSM", sTime: time.Now()}
     psm.init()
 
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */1 * * * ?", misc.WrapLog(psm.check))
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 1/10 * * * ?", misc.WrapLog(psm.report))
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(psm.stats))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(psm.check))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(psm.report))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */6 * * ?", misc.WrapLog(psm.stats))
 
     concerned[USDT_PSM] = psm.handleUSDT
     concerned[USDC_PSM] = psm.handleUSDC
@@ -96,7 +96,7 @@ func (p *PSM) check() {
     diffOfUSDT := big.NewInt(0)
     diffOfUSDT = diffOfUSDT.Sub(balanceOfUSDT, p.cBalanceOfUSDT)
     if diffOfUSDT.CmpAbs(reportThreshold) >= 0 {
-        slack.SendMsg(p.topic, "Large gem balance change, %s <!channel>",
+        slack.SendMsg(p.topic, "Large gem balance change in last `10min`, %s <!channel>",
             misc.FormatTokenAmt("USDT", diffOfUSDT, true))
         p.report()
     }
@@ -106,7 +106,7 @@ func (p *PSM) check() {
     diffOfUSDC := big.NewInt(0)
     diffOfUSDC = diffOfUSDC.Sub(balanceOfUSDC, p.cBalanceOfUSDC)
     if diffOfUSDC.CmpAbs(reportThreshold) >= 0 {
-        slack.SendMsg(p.topic, "Large gem balance change, %s <!channel>",
+        slack.SendMsg(p.topic, "Large gem balance change in last `10min`, %s <!channel>",
             misc.FormatTokenAmt("USDC", diffOfUSDC, true))
         p.report()
     }

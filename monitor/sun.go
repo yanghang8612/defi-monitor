@@ -51,9 +51,9 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
     sun := &SUN{topic: "SUN", sTime: time.Now()}
     sun.init()
 
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */1 * * * ?", misc.WrapLog(sun.check))
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 1/10 * * * ?", misc.WrapLog(sun.report))
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(sun.stats))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(sun.check))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(sun.report))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */6 * * ?", misc.WrapLog(sun.stats))
 
     concerned[Sun2pool] = func(event *net.Event) {
         switch event.EventName {
@@ -170,7 +170,7 @@ func (s *SUN) check() {
     diffUSDT := big.NewInt(0)
     diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.cUSDTPoolBalance)
     if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.ReportThreshold)) >= 0 {
-        slack.SendMsg(s.topic, "Large pool balance change, %s, %s <!channel>",
+        slack.SendMsg(s.topic, "Large pool balance change in last `10min`, %s, %s <!channel>",
             misc.FormatTokenAmt("USDD", diffUSDD, true),
             misc.FormatTokenAmt("USDT", diffUSDT, true))
     }

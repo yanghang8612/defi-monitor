@@ -21,11 +21,11 @@ func FormatTokenAmt(token string, amt *big.Int, isDiff bool) string {
     text := fmt.Sprintf("%s - `%s`", GetTokenLogo(token), ToReadableDec(big.NewInt(0).Abs(amt)))
     if isDiff {
         if amt.Sign() > 0 {
-            text += " :arrow_up_small:"
+            text += " :arrow_heading_up:"
         } else if amt.Sign() < 0 {
-            text += " :arrow_down_small:"
+            text += " :arrow_heading_down:"
         } else {
-            text += " :arrows_counterclockwise:"
+            text += " :low_brightness:"
         }
     }
     return text
