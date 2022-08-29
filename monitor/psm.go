@@ -1,6 +1,7 @@
 package monitor
 
 import (
+    "fmt"
     "psm-monitor/config"
     "psm-monitor/misc"
     "psm-monitor/net"
@@ -150,8 +151,8 @@ func (p *PSM) stats() {
 func (p *PSM) getUSDDBalance() *big.Int {
     result, err := net.Trigger(USDD_DaiJoin, "getUsddBalance()", "")
     if err != nil {
-        // if we cannot get current USDD balance, return the pre value
-        slack.ReportPanic(err.Error())
+        // if we cannot get current USDD balance, return the c-value
+        misc.Warn(p.topic+".getUSDDBalance", fmt.Sprintf("action=\"%s\" reason=\"%s\"", "query USDD balance", err.Error()))
         return p.cBalanceOfUSDD
     }
     return misc.ConvertDec6(misc.ToBigInt(result))
@@ -161,7 +162,7 @@ func (p *PSM) getUSDTBalance() *big.Int {
     result, err := net.Trigger(USDT, "balanceOf(address)", misc.ToEthAddr(USDT_GemJoin))
     if err != nil {
         // if we cannot get current USDT balance, return the c-value
-        slack.ReportPanic(err.Error())
+        misc.Warn(p.topic+".getUSDTBalance", fmt.Sprintf("action=\"%s\" reason=\"%s\"", "query USDT balance", err.Error()))
         return p.cBalanceOfUSDT
     }
     return misc.ConvertDec6(misc.ToBigInt(result))
@@ -171,7 +172,7 @@ func (p *PSM) getUSDCBalance() *big.Int {
     result, err := net.Trigger(USDC, "balanceOf(address)", misc.ToEthAddr(USDC_GemJoin))
     if err != nil {
         // if we cannot get current USDC balance, return the c-value
-        slack.ReportPanic(err.Error())
+        misc.Warn(p.topic+".getUSDCBalance", fmt.Sprintf("action=\"%s\" reason=\"%s\"", "query USDC balance", err.Error()))
         return p.cBalanceOfUSDC
     }
     return misc.ConvertDec6(misc.ToBigInt(result))

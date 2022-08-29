@@ -104,7 +104,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
             tokenAmount, _ := new(big.Int).SetString(event.Result["coin_amount"], 10)
             threshold := big.NewInt(config.Get().SUN.LiquidityThreshold)
             tokenName := ""
-            rspData, _ := net.Get("https://apilist.tronscan.org/api/transaction-info?hash=" + event.TransactionHash)
+            rspData, _ := net.Get("https://apilist.tronscan.org/api/transaction-info?hash="+event.TransactionHash, nil)
             var tx oneCoinTx
             if err := json.Unmarshal(rspData, &tx); err == nil {
                 if tx.TriggerInfo.Parameter["i"] == "0" {
@@ -223,7 +223,7 @@ func (s *SUN) getA() int64 {
         return misc.ToBigInt(result).Int64()
     } else {
         // if we cannot get current pool A value, return the pre-value
-        misc.Info("Trigger pool A value failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Warn(s.topic+".getA", fmt.Sprintf("action=\"%s\" reason=\"%s\"", "query A value", err.Error()))
         return s.preA
     }
 
@@ -234,7 +234,7 @@ func (s *SUN) getPoolUSDDBalance() *big.Int {
         return misc.ConvertDec18(res)
     } else {
         // if we cannot get current USDD pool balance, return the c-value
-        misc.Info("Trigger pool USDD balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Warn(s.topic+".getPoolUSDDBalance", fmt.Sprintf("action=\"%s\" reason=\"%s\"", "query USDD pool balance", err.Error()))
         return s.cUSDDPoolBalance
     }
 }
@@ -244,7 +244,7 @@ func (s *SUN) getPoolUSDTBalance() *big.Int {
         return misc.ConvertDec6(res)
     } else {
         // if we cannot get current USDT pool balance, return the c-value
-        misc.Info("Trigger pool USDT balance failed", fmt.Sprintf("reason=\"%s\"", err.Error()))
+        misc.Warn(s.topic+".getPoolUSDTBalance", fmt.Sprintf("action=\"%s\" reason=\"%s\"", "query USDT pool balance", err.Error()))
         return s.cUSDTPoolBalance
     }
 }

@@ -1,6 +1,7 @@
 package slack
 
 import (
+    "errors"
     "psm-monitor/config"
     "psm-monitor/misc"
     "psm-monitor/net"
@@ -17,17 +18,21 @@ func SendMsg(topic, format string, a ...any) {
     msg := &Message{
         Text: fmt.Sprintf("[%s] %s", topic, fmt.Sprintf(format, a...)),
     }
-    res, err := net.Post(config.Get().SlackWebhook, msg)
-    if err != nil {
+    if _, err := net.Post(config.Get().SlackWebhook, msg, checkIfResponseOk); err != nil {
         misc.Warn("Send slack message", fmt.Sprintf("content=\"%s\" res=failed reason=\"%s\"", msg, err.Error()))
-    } else if strings.Compare("true", string(res)) != 0 {
-        misc.Warn("Send slack message", fmt.Sprintf("content=\"%s\" res=failed reason=\"slack retruned false\"", msg))
     } else {
         misc.Info("Send slack message", fmt.Sprintf("content=\"%s\" res=success", msg))
     }
 }
 
-func ReportPanic(reason string) {
-    //SendMsg("APP", reason)
-    misc.Error("Panic happened", reason)
+func checkIfResponseOk(resBody []byte) error {
+    if strings.ContainsAny(string(resBody), "ok") {
+        return nil
+    }
+    return errors.New("Slack response need ok, but got " + string(resBody))
+}
+
+func ReportPanic(topic string, err error) {
+    SendMsg("APP", "Panic happened, doing `%s`, reason `%s`", topic, err.Error())
+    //misc.Error("Panic happened", reason)
 }

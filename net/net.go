@@ -62,7 +62,7 @@ func newJsonRpcMessage(method string, params []byte) *JsonRpcMessage {
 }
 
 func CallJsonRpc(method string, params []byte) ([]byte, error) {
-    data, err := Post(Endpoint+"jsonrpc", newJsonRpcMessage(method, params))
+    data, err := Post(Endpoint+"jsonrpc", newJsonRpcMessage(method, params), nil)
     if err != nil {
         return nil, err
     }
@@ -98,7 +98,7 @@ func getEvents(url string) []*Event {
     events := Events{}
     events.Meta.Links.Next = url
     for len(events.Meta.Links.Next) != 0 {
-        rspData, err := Get(events.Meta.Links.Next)
+        rspData, err := Get(events.Meta.Links.Next, nil)
         if err != nil {
             break
         }
@@ -111,7 +111,7 @@ func getEvents(url string) []*Event {
 }
 
 func GetTxFrom(id string) string {
-    if resData, netErr := Get("https://apilist.tronscanapi.com/api/transaction-info?hash=" + id); netErr == nil {
+    if resData, netErr := Get("https://apilist.tronscanapi.com/api/transaction-info?hash="+id, nil); netErr == nil {
         result := make(map[string]interface{})
         if jsonErr := json.Unmarshal(resData, &result); jsonErr == nil {
             return result["ownerAddress"].(string)
@@ -127,7 +127,7 @@ func Trigger(addr, selector, param string) (string, error) {
         FunctionSelector: selector,
         Parameter:        param,
         Visible:          true,
-    })
+    }, nil)
     if err != nil {
         return "", err
     }
@@ -142,22 +142,22 @@ func Trigger(addr, selector, param string) (string, error) {
     return "", ErrNoReturn
 }
 
-func Get(url string) ([]byte, error) {
+func Get(url string, chkFn func([]byte) error) ([]byte, error) {
     req, _ := http.NewRequest("GET", url, nil)
-    return doRequestWithRetry(req, []byte("nil"))
+    return doRequestWithRetry(req, []byte("nil"), chkFn)
 }
 
-func Post(url string, d interface{}) ([]byte, error) {
+func Post(url string, d interface{}, chkFn func([]byte) error) ([]byte, error) {
     reqData, jsonErr := json.Marshal(d)
     if jsonErr != nil {
         return nil, jsonErr
     }
     req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqData))
     req.Header.Set("Content-Type", "application/json")
-    return doRequestWithRetry(req, reqData)
+    return doRequestWithRetry(req, reqData, chkFn)
 }
 
-func doRequestWithRetry(req *http.Request, body []byte) ([]byte, error) {
+func doRequestWithRetry(req *http.Request, body []byte, chkFn func([]byte) error) ([]byte, error) {
     reqId := rand.Uint32()
     title := "Http request report"
     misc.Info(title, fmt.Sprintf("url=%s method=%s data=%s reqid=%d", req.URL, req.Method, string(body), reqId))
@@ -165,16 +165,24 @@ func doRequestWithRetry(req *http.Request, body []byte) ([]byte, error) {
         startAt := time.Now()
         retRes, retErr := defaultHTTPClient.Do(req)
         cost := time.Now().Sub(startAt).Milliseconds()
+        var chkErr error
         if retErr == nil && retRes.StatusCode == 200 {
             if body, ioErr := io.ReadAll(retRes.Body); ioErr == nil {
                 _ = retRes.Body.Close()
-                misc.Debug(title, fmt.Sprintf("status=success reqid=%d cost=%dms", reqId, cost))
-                return body, nil
+                if chkFn != nil {
+                    chkErr = chkFn(body)
+                }
+                if chkErr == nil {
+                    misc.Debug(title, fmt.Sprintf("status=success reqid=%d cost=%dms", reqId, cost))
+                    return body, nil
+                }
             }
             _ = retRes.Body.Close()
         }
         if retErr != nil {
             misc.Debug(title, fmt.Sprintf("status=retry reqid=%d cost=%dms times=%dth reason=\"%s\"", reqId, cost, i, retErr.Error()))
+        } else if chkErr != nil {
+            misc.Debug(title, fmt.Sprintf("status=retry reqid=%d cost=%dms times=%dth reason=\"%s\"", reqId, cost, i, chkErr.Error()))
         } else {
             misc.Debug(title, fmt.Sprintf("status=retry reqid=%d cost=%dms times=%dth reason=\"invalid status code %d\"", reqId, cost, i, retRes.StatusCode))
         }
