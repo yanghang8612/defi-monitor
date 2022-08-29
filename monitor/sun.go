@@ -53,7 +53,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(sun.check))
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(sun.report))
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */6 * * ?", misc.WrapLog(sun.stats))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 30 */6 * * ?", misc.WrapLog(sun.stats))
 
     concerned[Sun2pool] = func(event *net.Event) {
         switch event.EventName {

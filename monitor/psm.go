@@ -53,7 +53,7 @@ func StartPSM(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(psm.check))
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */1 * * ?", misc.WrapLog(psm.report))
-    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 0 */6 * * ?", misc.WrapLog(psm.stats))
+    _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" 30 */6 * * ?", misc.WrapLog(psm.stats))
 
     concerned[USDT_PSM] = psm.handleUSDT
     concerned[USDC_PSM] = psm.handleUSDC
