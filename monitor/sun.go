@@ -196,16 +196,14 @@ func (s *SUN) report() {
         USDTRatio = USDTFloat64 / USDDFloat64
         Format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
     }
-    if USDDPoolBalance.Cmp(s.rUSDDPoolBalance) != 0 || USDTPoolBalance.Cmp(s.rUSDTPoolBalance) != 0 {
-        slack.SendMsg(s.topic, "State Report, %s, %s, A - `%d`, Ratio - "+Format,
-            misc.FormatTokenAmt("USDD", USDDPoolBalance, false),
-            misc.FormatTokenAmt("USDT", USDTPoolBalance, false),
-            curA,
-            USDDFloat64*100/TotalFloat64,
-            USDTFloat64*100/TotalFloat64,
-            USDDRatio,
-            USDTRatio)
-    }
+    slack.SendMsg(s.topic, "State Report, %s, %s, A - `%d`, Ratio - "+Format,
+        misc.FormatTokenAmt("USDD", USDDPoolBalance, false),
+        misc.FormatTokenAmt("USDT", USDTPoolBalance, false),
+        curA,
+        USDDFloat64*100/TotalFloat64,
+        USDTFloat64*100/TotalFloat64,
+        USDDRatio,
+        USDTRatio)
     s.rUSDDPoolBalance, s.rUSDTPoolBalance, s.preA = USDDPoolBalance, USDTPoolBalance, curA
 }
 
