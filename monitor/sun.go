@@ -81,10 +81,10 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
             diff = diff.Sub(soldAmount, boughtAmount)
             threshold := big.NewInt(config.Get().SUN.SwapThreshold)
             if boughtAmount.Cmp(threshold) > 0 {
-                msg := fmt.Sprintf("Large exchange, %s => %s, %s, ",
+                msg := appendWarningIfNeeded(fmt.Sprintf("Large exchange, %s => %s, %s, ",
                     misc.FormatTokenAmt(soldToken, soldAmount, false),
                     misc.FormatTokenAmt(boughtToken, boughtAmount, false),
-                    misc.FormatUser(net.GetTxFrom(event.TransactionHash)))
+                    misc.FormatUser(net.GetTxFrom(event.TransactionHash))), boughtToken)
                 if diff.Sign() > 0 {
                     msg += fmt.Sprintf("lose %s, %s <!channel>",
                         misc.FormatTokenAmt(boughtToken, diff, false),
@@ -117,11 +117,12 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
                     tokenName = "USDT"
                 }
                 if tokenAmount.Cmp(threshold) >= 0 {
-                    slack.SendMsg(sun.topic, "Large %s, %s, %s, %s <!channel>",
+                    msg := appendWarningIfNeeded(fmt.Sprintf("Large %s, %s, %s, %s <!channel>",
                         event.EventName,
                         misc.FormatTokenAmt(tokenName, tokenAmount.Neg(tokenAmount), true),
                         misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
-                        misc.FormatTxUrl(event.TransactionHash))
+                        misc.FormatTxUrl(event.TransactionHash)), tokenName)
+                    slack.SendMsg(sun.topic, msg)
                 }
             }
         case "RampA":
@@ -147,13 +148,25 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
     }
     threshold := big.NewInt(config.Get().SUN.LiquidityThreshold)
     if changedLiquidityOfUSDD.CmpAbs(threshold) >= 0 || changedLiquidityOfUSDT.CmpAbs(threshold) >= 0 {
-        slack.SendMsg(s.topic, "Large %s, %s, %s, %s, %s <!channel>",
+        msg := fmt.Sprintf("Large %s, %s, %s, %s, %s <!channel>",
             event.EventName,
             misc.FormatTokenAmt("USDD", changedLiquidityOfUSDD, true),
             misc.FormatTokenAmt("USDT", changedLiquidityOfUSDT, true),
             misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
             misc.FormatTxUrl(event.TransactionHash))
+        if isRemove && changedLiquidityOfUSDT.Cmp(big.NewInt(0)) > 0 {
+            msg = appendWarningIfNeeded(msg, "USDT")
+        }
+        slack.SendMsg(s.topic, msg)
     }
+}
+
+func appendWarningIfNeeded(msg, tokenName string) string {
+    if strings.Compare("USDT", tokenName) == 0 {
+        // USDT has been token away from pool, we should add exclamation mark
+        msg = ":bangbang: " + msg
+    }
+    return msg
 }
 
 func (s *SUN) init() {
