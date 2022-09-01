@@ -25,7 +25,7 @@ func FormatTokenAmt(token string, amt *big.Int, isDiff bool) string {
         } else if amt.Sign() < 0 {
             text += " :arrow_heading_down:"
         } else {
-            text += " :low_brightness:"
+            text += " :repeat:"
         }
     }
     return text
