@@ -15,8 +15,12 @@ type Message struct {
 }
 
 func SendMsg(topic, format string, a ...any) {
+    content := format
+    if len(a) != 0 {
+        content = fmt.Sprintf(format, a...)
+    }
     msg := &Message{
-        Text: fmt.Sprintf("[%s] %s", topic, fmt.Sprintf(format, a...)),
+        Text: fmt.Sprintf("[%s] %s", topic, content),
     }
     if _, err := net.Post(config.Get().SlackWebhook, msg, checkIfResponseOk); err != nil {
         misc.Warn("Send slack message", fmt.Sprintf("content=\"%s\" res=failed reason=\"%s\"", msg, err.Error()))
