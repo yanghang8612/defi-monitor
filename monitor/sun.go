@@ -86,11 +86,11 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
                     misc.FormatTokenAmt(boughtToken, boughtAmount, false),
                     misc.FormatUser(net.GetTxFrom(event.TransactionHash))), boughtToken)
                 if diff.Sign() > 0 {
-                    msg += fmt.Sprintf("lose %s, slip - `%.2f%%`, ",
+                    msg += fmt.Sprintf("lose %s, slip - `%.3f%%`, ",
                         misc.FormatTokenAmt(boughtToken, diff, false),
                         float64(diff.Uint64())/float64(soldAmount.Uint64())*100)
                 } else if diff.Sign() < 0 {
-                    msg += fmt.Sprintf("earn %s, slip - `%.2f%%`, ",
+                    msg += fmt.Sprintf("earn %s, slip - `%.3f%%`, ",
                         misc.FormatTokenAmt(boughtToken, diff.Abs(diff), false),
                         float64(diff.Uint64())/float64(soldAmount.Uint64())*100)
                 }
