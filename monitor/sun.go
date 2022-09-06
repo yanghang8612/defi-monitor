@@ -155,7 +155,7 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
             misc.FormatTokenAmt("USDT", changedLiquidityOfUSDT, true),
             misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
             misc.FormatTxUrl(event.TransactionHash))
-        if changedLiquidityOfUSDT.CmpAbs(big.NewInt(0)) < 0 {
+        if changedLiquidityOfUSDT.Cmp(big.NewInt(0)) < 0 {
             msg = appendWarningIfNeeded(msg, "USDT")
         }
         slack.SendMsg(s.topic, msg)
