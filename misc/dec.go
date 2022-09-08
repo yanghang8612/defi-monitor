@@ -11,6 +11,10 @@ func ToBigInt(hexData string) *big.Int {
     return big.NewInt(0).SetBytes(hexutils.HexToBytes(hexData))
 }
 
+func ConvertDecN(amt *big.Int, decimal uint) *big.Int {
+    return amt.Div(amt, GetDec(decimal))
+}
+
 func ConvertDec6(amt *big.Int) *big.Int {
     return amt.Div(amt, GetDec(6))
 }

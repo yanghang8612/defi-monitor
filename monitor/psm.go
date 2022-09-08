@@ -68,20 +68,20 @@ func StartPSM(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 }
 
 func (p *PSM) handleUSDT(event *net.Event) {
-    p.handleGemEvents(event, "USDT")
+    p.handleGemEvents(event, "USDT", 6)
 }
 
 func (p *PSM) handleUSDC(event *net.Event) {
-    p.handleGemEvents(event, "USDC")
+    p.handleGemEvents(event, "USDC", 6)
 }
 
 func (p *PSM) handleTUSD(event *net.Event) {
-    p.handleGemEvents(event, "TUSD")
+    p.handleGemEvents(event, "TUSD", 18)
 }
 
-func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
+func (p *PSM) handleGemEvents(event *net.Event, ilk string, decimal uint) {
     amount, _ := new(big.Int).SetString(event.Result["value"], 10)
-    amount = misc.ConvertDec6(amount)
+    amount = misc.ConvertDecN(amount, decimal)
     if strings.Compare(event.EventName, "BuyGem") == 0 {
         amount = amount.Neg(amount)
     }
