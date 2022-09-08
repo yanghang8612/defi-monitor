@@ -24,6 +24,9 @@ const (
     USDC         = "TEkxiTehnzSmSe2XqrBj4w32RUN966rdz8"
     USDC_GemJoin = "TRGTuMiDYAbztetdndYyMzYvtaRmucjz5q"
     USDC_PSM     = "TUcj1rpMgJCcFZULyq7uLbkmfh9xMnYTmA"
+    TUSD         = "TUpMhErZL2fhh4sVNULAbNKLokS4GjC1F4"
+    TUSD_GemJoin = "TPxcmB9dQC3LHswCNEc4rJs1HFGb8McYjT"
+    TUSD_PSM     = "TY2op6AKcEkFhv8hxNJj3FBUfjManxYLSe"
     VAT          = "TBbYhvifBJVQ5ytThJ5ZfHfX8mK133ccqv"
 )
 
@@ -34,17 +37,20 @@ type PSM struct {
     cBalanceOfUSDD  *big.Int
     cBalanceOfUSDT  *big.Int
     cBalanceOfUSDC  *big.Int
+    cBalanceOfTUSD  *big.Int
     isLowUSDDWarned bool
 
     // report values
     rBalanceOfUSDD *big.Int
     rBalanceOfUSDT *big.Int
     rBalanceOfUSDC *big.Int
+    rBalanceOfTUSD *big.Int
 
     // stats values
     sBalanceOfUSDD *big.Int
     sBalanceOfUSDT *big.Int
     sBalanceOfUSDC *big.Int
+    sBalanceOfTUSD *big.Int
     sTime          time.Time
 }
 
@@ -58,6 +64,7 @@ func StartPSM(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 
     concerned[USDT_PSM] = psm.handleUSDT
     concerned[USDC_PSM] = psm.handleUSDC
+    concerned[TUSD_PSM] = psm.handleTUSD
 }
 
 func (p *PSM) handleUSDT(event *net.Event) {
@@ -66,6 +73,10 @@ func (p *PSM) handleUSDT(event *net.Event) {
 
 func (p *PSM) handleUSDC(event *net.Event) {
     p.handleGemEvents(event, "USDC")
+}
+
+func (p *PSM) handleTUSD(event *net.Event) {
+    p.handleGemEvents(event, "TUSD")
 }
 
 func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
@@ -84,9 +95,12 @@ func (p *PSM) handleGemEvents(event *net.Event, ilk string) {
 }
 
 func (p *PSM) init() {
-    p.cBalanceOfUSDD, p.cBalanceOfUSDT, p.cBalanceOfUSDC = p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance()
-    p.rBalanceOfUSDD, p.rBalanceOfUSDT, p.rBalanceOfUSDC = big.NewInt(-1), big.NewInt(-1), big.NewInt(-1)
-    p.sBalanceOfUSDD, p.sBalanceOfUSDT, p.sBalanceOfUSDC = p.cBalanceOfUSDD, p.cBalanceOfUSDT, p.cBalanceOfUSDC
+    p.cBalanceOfUSDD, p.cBalanceOfUSDT, p.cBalanceOfUSDC, p.cBalanceOfTUSD =
+        p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), p.getTUSDBalance()
+    p.rBalanceOfUSDD, p.rBalanceOfUSDT, p.rBalanceOfUSDC, p.rBalanceOfTUSD =
+        big.NewInt(-1), big.NewInt(-1), big.NewInt(-1), big.NewInt(-1)
+    p.sBalanceOfUSDD, p.sBalanceOfUSDT, p.sBalanceOfUSDC, p.sBalanceOfTUSD =
+        p.cBalanceOfUSDD, p.cBalanceOfUSDT, p.cBalanceOfUSDC, p.cBalanceOfTUSD
     p.report()
 }
 
@@ -113,6 +127,16 @@ func (p *PSM) check() {
     }
     p.cBalanceOfUSDC = balanceOfUSDC
 
+    balanceOfTUSD := p.getTUSDBalance()
+    diffOfTUSD := big.NewInt(0)
+    diffOfTUSD = diffOfTUSD.Sub(balanceOfTUSD, p.cBalanceOfTUSD)
+    if diffOfTUSD.CmpAbs(reportThreshold) >= 0 {
+        slack.SendMsg(p.topic, "Large gem balance change in last `10min`, %s <!channel>",
+            misc.FormatTokenAmt("TUSD", diffOfTUSD, true))
+        p.report()
+    }
+    p.cBalanceOfTUSD = balanceOfTUSD
+
     // check if Vault remained USDD balance lower than threshold
     balanceOfUSDD := p.getUSDDBalance()
     daiThreshold := big.NewInt(config.Get().PSM.DaiThreshold)
@@ -128,22 +152,28 @@ func (p *PSM) check() {
 }
 
 func (p *PSM) report() {
-    balanceOfUSDD, balanceOfUSDT, balanceOfUSDC := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance()
-    slack.SendMsg(p.topic, "State Report, %s, %s, %s",
+    balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, balanceOfTUSD :=
+        p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), p.getTUSDBalance()
+    slack.SendMsg(p.topic, "State Report, %s, %s, %s, %s",
         misc.FormatTokenAmt("USDD", balanceOfUSDD, false),
         misc.FormatTokenAmt("USDT", balanceOfUSDT, false),
-        misc.FormatTokenAmt("USDC", balanceOfUSDC, false))
-    p.rBalanceOfUSDD, p.rBalanceOfUSDT, p.rBalanceOfUSDC = balanceOfUSDD, balanceOfUSDT, balanceOfUSDC
+        misc.FormatTokenAmt("USDC", balanceOfUSDC, false),
+        misc.FormatTokenAmt("TUSD", balanceOfTUSD, false))
+    p.rBalanceOfUSDD, p.rBalanceOfUSDT, p.rBalanceOfUSDC, p.rBalanceOfTUSD =
+        balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, balanceOfTUSD
 }
 
 func (p *PSM) stats() {
-    balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now := p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), time.Now()
-    slack.SendMsg(p.topic, "Stats Report, from `%s` ~ `%s`, %s, %s, %s",
+    balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, balanceOfTUSD, now :=
+        p.getUSDDBalance(), p.getUSDTBalance(), p.getUSDCBalance(), p.getTUSDBalance(), time.Now()
+    slack.SendMsg(p.topic, "Stats Report, from `%s` ~ `%s`, %s, %s, %s, %s",
         p.sTime.Format("15:04"), now.Format("15:04"),
         misc.FormatTokenAmt("USDD", p.sBalanceOfUSDD.Sub(balanceOfUSDD, p.sBalanceOfUSDD), true),
         misc.FormatTokenAmt("USDT", p.sBalanceOfUSDT.Sub(balanceOfUSDT, p.sBalanceOfUSDT), true),
-        misc.FormatTokenAmt("USDC", p.sBalanceOfUSDC.Sub(balanceOfUSDC, p.sBalanceOfUSDC), true))
-    p.sBalanceOfUSDD, p.sBalanceOfUSDT, p.sBalanceOfUSDC, p.sTime = balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, now
+        misc.FormatTokenAmt("USDC", p.sBalanceOfUSDC.Sub(balanceOfUSDC, p.sBalanceOfUSDC), true),
+        misc.FormatTokenAmt("TUSD", p.sBalanceOfTUSD.Sub(balanceOfTUSD, p.sBalanceOfTUSD), true))
+    p.sBalanceOfUSDD, p.sBalanceOfUSDT, p.sBalanceOfUSDC, p.sBalanceOfTUSD, p.sTime =
+        balanceOfUSDD, balanceOfUSDT, balanceOfUSDC, balanceOfTUSD, now
 }
 
 func (p *PSM) getUSDDBalance() *big.Int {
@@ -174,4 +204,14 @@ func (p *PSM) getUSDCBalance() *big.Int {
         return p.cBalanceOfUSDC
     }
     return misc.ConvertDec6(misc.ToBigInt(result))
+}
+
+func (p *PSM) getTUSDBalance() *big.Int {
+    result, err := net.Trigger(TUSD, "balanceOf(address)", misc.ToEthAddr(TUSD_GemJoin))
+    if err != nil {
+        // if we cannot get current TUSD balance, return the c-value
+        misc.Warn(p.topic+".getTUSDBalance", fmt.Sprintf("action=\"%s\" reason=\"%s\"", "query TUSD balance", err.Error()))
+        return p.cBalanceOfTUSD
+    }
+    return misc.ConvertDec18(misc.ToBigInt(result))
 }
