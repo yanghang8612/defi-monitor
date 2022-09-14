@@ -8,3 +8,6 @@ report_threshold = 1_000_000
 gem_threshold = 100_000
 dai_threshold = 5_000_000
 report_threshold = 1_000_000
+[JST]
+stable_threshold = 100_000
+report_threshold = 1_000_000

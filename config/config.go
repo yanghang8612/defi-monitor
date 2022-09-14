@@ -11,6 +11,7 @@ type Config struct {
     LogLevel     string `toml:"log_level"`
     SUN          SUNConfig
     PSM          PSMConfig
+    JST          JSTConfig
 }
 
 type SUNConfig struct {
@@ -22,6 +23,11 @@ type SUNConfig struct {
 type PSMConfig struct {
     GemThreshold    int64 `toml:"gem_threshold"`
     DaiThreshold    int64 `toml:"dai_threshold"`
+    ReportThreshold int64 `toml:"report_threshold"`
+}
+
+type JSTConfig struct {
+    StableThreshold int64 `toml:"stable_threshold"`
     ReportThreshold int64 `toml:"report_threshold"`
 }
 

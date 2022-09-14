@@ -81,7 +81,8 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
             diff = diff.Sub(soldAmount, boughtAmount)
             threshold := big.NewInt(config.Get().SUN.SwapThreshold)
             if boughtAmount.Cmp(threshold) > 0 {
-                msg := appendWarningIfNeeded(fmt.Sprintf("Large exchange, %s => %s, %s, ",
+                msg := appendWarningIfNeeded(fmt.Sprintf("Large %s, %s => %s, %s, ",
+                    event.EventName,
                     misc.FormatTokenAmt(soldToken, soldAmount, false),
                     misc.FormatTokenAmt(boughtToken, boughtAmount, false),
                     misc.FormatUser(net.GetTxFrom(event.TransactionHash))), boughtToken)

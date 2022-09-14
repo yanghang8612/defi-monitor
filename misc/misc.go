@@ -11,7 +11,12 @@ import (
     "time"
 )
 
-var tokenMapping = map[string]string{"usdt": ":usdtlogo:", "usdc": ":usdclogo:", "tusd": ":tusdlogo:", "usdd": ":usdd:"}
+var tokenMapping = map[string]string{
+    "usdt": ":usdtlogo:",
+    "usdc": ":usdclogo:",
+    "tusd": ":tusdlogo:",
+    "usdj": ":usdjlogo:",
+    "usdd": ":usdd:"}
 
 func GetTokenLogo(token string) string {
     return tokenMapping[strings.ToLower(token)]
