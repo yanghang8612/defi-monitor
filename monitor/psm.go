@@ -55,7 +55,7 @@ type PSM struct {
 }
 
 func StartPSM(c *cron.Cron, concerned map[string]func(event *net.Event)) {
-    psm := &PSM{topic: "PSM", sTime: time.Now()}
+    psm := &PSM{topic: ":usdd: [PSM]", sTime: time.Now()}
     psm.init()
 
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(psm.check))

@@ -48,7 +48,7 @@ type oneCoinTx struct {
 }
 
 func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
-    sun := &SUN{topic: "SUN", sTime: time.Now()}
+    sun := &SUN{topic: ":sunio: [SUN]", sTime: time.Now()}
     sun.init()
 
     _ = c.AddFunc(strconv.Itoa(int(rand.Uint32()%60))+" */10 * * * ?", misc.WrapLog(sun.check))

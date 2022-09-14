@@ -5,6 +5,7 @@ import (
     "psm-monitor/config"
     "psm-monitor/misc"
     "psm-monitor/net"
+    "time"
 
     "fmt"
     "strings"
@@ -20,7 +21,7 @@ func SendMsg(topic, format string, a ...any) {
         content = fmt.Sprintf(format, a...)
     }
     msg := &Message{
-        Text: fmt.Sprintf("[%s] %s", topic, content),
+        Text: fmt.Sprintf("%s [%s] %s", topic, time.Now().Format("01-02 15:04:05"), content),
     }
     if _, err := net.Post(config.Get().SlackWebhook, msg, checkIfResponseOk); err != nil {
         misc.Warn("Send slack message", fmt.Sprintf("content=\"%s\" res=failed reason=\"%s\"", msg, err.Error()))
@@ -37,6 +38,6 @@ func checkIfResponseOk(resBody []byte) error {
 }
 
 func ReportPanic(topic string, err error) {
-    SendMsg("APP", "Panic happened, doing `%s`, reason `%s`", topic, err.Error())
+    SendMsg(":zany_face: [APP]", "Panic happened, doing `%s`, reason `%s`", topic, err.Error())
     //misc.Error("Panic happened", reason)
 }

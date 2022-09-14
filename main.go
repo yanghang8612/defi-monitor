@@ -35,7 +35,7 @@ func main() {
 }
 
 func initApp() {
-    slack.SendMsg("APP", "Monitor now started, components - [PSM, SUN, JST]")
+    slack.SendMsg(":zany_face: [APP]", "Monitor now started, components - [PSM, SUN, JST]")
     trackedBlockNumber = net.BlockNumber()
     trackedEvent = make(map[string]func(event *net.Event))
     rand.Seed(time.Now().UnixNano())

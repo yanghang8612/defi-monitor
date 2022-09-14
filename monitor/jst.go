@@ -43,7 +43,7 @@ type JST struct {
 }
 
 func StartJST(c *cron.Cron, concerned map[string]func(event *net.Event)) {
-    jst := &JST{topic: "JST", markets: make(map[string]market)}
+    jst := &JST{topic: ":justlend: [JST]", markets: make(map[string]market)}
     jst.markets[jTRX] = market{symbol: "TRX", decimals: 8}
     jst.markets[jUSDD] = market{symbol: "USDD", decimals: 18}
     jst.markets[jUSDT] = market{symbol: "USDT", decimals: 6}
