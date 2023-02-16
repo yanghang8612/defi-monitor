@@ -31,12 +31,14 @@ var ErrHttpFailed = errors.New("net: http request failed")
 var ErrNoReturn = errors.New("net: no return data")
 var ErrQueryFailed = errors.New("net: query failed")
 
+var dialer = net.Dialer{
+	Timeout:   30 * time.Second,
+	KeepAlive: 30 * time.Second,
+}
+
 var defaultTransport = &http.Transport{
-	Proxy: http.ProxyFromEnvironment,
-	DialContext: (net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-	}).DialContext,
+	Proxy:                 http.ProxyFromEnvironment,
+	DialContext:           dialer.DialContext,
 	ForceAttemptHTTP2:     true,
 	MaxIdleConns:          100,
 	IdleConnTimeout:       90 * time.Second,
