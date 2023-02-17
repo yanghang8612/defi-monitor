@@ -80,7 +80,7 @@ func (j *JST) handleStableCoin(event *net.Event) {
 		borrowAmount = misc.ConvertDecN(borrowAmount, jMarket.decimals)
 		borrower := event.Result["borrower"]
 		if borrowAmount.Cmp(threshold) >= 0 {
-			slack.SendMsg(j.topic, "Large %s, %s, %s, %s <!channel>",
+			slack.SendMsg(j.topic, "Large %s, %s, %s, %s",
 				event.EventName,
 				misc.FormatTokenAmt(jMarket.symbol, borrowAmount, false),
 				misc.FormatUser(borrower),
@@ -91,7 +91,7 @@ func (j *JST) handleStableCoin(event *net.Event) {
 		redeemAmount = misc.ConvertDecN(redeemAmount, jMarket.decimals)
 		redeemer := event.Result["redeemer"]
 		if redeemAmount.Cmp(threshold) >= 0 {
-			slack.SendMsg(j.topic, "Large %s, %s, %s, %s <!channel>",
+			slack.SendMsg(j.topic, "Large %s, %s, %s, %s",
 				event.EventName,
 				misc.FormatTokenAmt(jMarket.symbol, redeemAmount, false),
 				misc.FormatUser(redeemer),

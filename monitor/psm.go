@@ -109,7 +109,7 @@ func (p *PSM) handleGemEvents(event *net.Event) {
 		amount = amount.Neg(amount)
 	}
 	if amount.CmpAbs(big.NewInt(config.Get().PSM.GemThreshold)) >= 0 {
-		slack.SendMsg(p.topic, "Large %s, %s, %s, %s <!channel>",
+		slack.SendMsg(p.topic, "Large %s, %s, %s, %s",
 			event.EventName,
 			misc.FormatTokenAmt(matchedName, amount, true),
 			misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
@@ -137,7 +137,7 @@ func (p *PSM) check() {
 		diff := big.NewInt(0)
 		diff = diff.Sub(balanceOfToken, p.cBalance[name])
 		if diff.CmpAbs(reportThreshold) >= 0 {
-			slack.SendMsg(p.topic, "Large gem balance change in last `10min`, %s <!channel>",
+			slack.SendMsg(p.topic, "Large gem balance change in last `10min`, %s",
 				misc.FormatTokenAmt(name, diff, true))
 			p.report()
 		}
@@ -149,7 +149,7 @@ func (p *PSM) check() {
 	daiThreshold := big.NewInt(config.Get().PSM.DaiThreshold)
 	if !p.isLowUSDDWarned && balanceOfUSDD.CmpAbs(daiThreshold) < 0 {
 		p.isLowUSDDWarned = true
-		slack.SendMsg(p.topic, "Vault remained USDD balance lower than %s <!channel>",
+		slack.SendMsg(p.topic, "Vault remained USDD balance lower than %s",
 			misc.ToReadableDec(daiThreshold))
 	}
 	if balanceOfUSDD.CmpAbs(daiThreshold) >= 0 {

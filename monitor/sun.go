@@ -95,7 +95,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 						misc.FormatTokenAmt(boughtToken, diff.Abs(diff), false),
 						float64(diff.Uint64())/float64(soldAmount.Uint64())*100)
 				}
-				msg += misc.FormatTxUrl(event.TransactionHash) + " <!channel>"
+				msg += misc.FormatTxUrl(event.TransactionHash)
 				slack.SendMsg(sun.topic, msg)
 			}
 		case "AddLiquidity":
@@ -119,7 +119,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 					tokenName = "USDT"
 				}
 				if tokenAmount.Cmp(threshold) >= 0 {
-					msg := appendWarningIfNeeded(fmt.Sprintf("Large %s, %s, %s, %s <!channel>",
+					msg := appendWarningIfNeeded(fmt.Sprintf("Large %s, %s, %s, %s",
 						event.EventName,
 						misc.FormatTokenAmt(tokenName, tokenAmount.Neg(tokenAmount), true),
 						misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
@@ -130,7 +130,7 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 		case "RampA":
 			oldA, _ := new(big.Int).SetString(event.Result["old_A"], 10)
 			newA, _ := new(big.Int).SetString(event.Result["new_A"], 10)
-			slack.SendMsg(sun.topic, "Ramp A from  `%d` => `%d`, %s <!channel>",
+			slack.SendMsg(sun.topic, "Ramp A from  `%d` => `%d`, %s",
 				oldA, newA, misc.FormatTxUrl(event.TransactionHash))
 		}
 	}
@@ -150,7 +150,7 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, isRemove bool) {
 	}
 	threshold := big.NewInt(config.Get().SUN.LiquidityThreshold)
 	if changedLiquidityOfUSDD.CmpAbs(threshold) >= 0 || changedLiquidityOfUSDT.CmpAbs(threshold) >= 0 {
-		msg := fmt.Sprintf("Large %s, %s, %s, %s, %s <!channel>",
+		msg := fmt.Sprintf("Large %s, %s, %s, %s, %s",
 			event.EventName,
 			misc.FormatTokenAmt("USDD", changedLiquidityOfUSDD, true),
 			misc.FormatTokenAmt("USDT", changedLiquidityOfUSDT, true),
@@ -185,7 +185,7 @@ func (s *SUN) check() {
 	diffUSDT := big.NewInt(0)
 	diffUSDT = diffUSDT.Sub(USDTPoolBalance, s.cUSDTPoolBalance)
 	if diffUSDT.CmpAbs(big.NewInt(config.Get().SUN.ReportThreshold)) >= 0 {
-		slack.SendMsg(s.topic, "Large pool balance change in last `10min`, %s, %s <!channel>",
+		slack.SendMsg(s.topic, "Large pool balance change in last `10min`, %s, %s",
 			misc.FormatTokenAmt("USDD", diffUSDD, true),
 			misc.FormatTokenAmt("USDT", diffUSDT, true))
 	}
