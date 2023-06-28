@@ -34,7 +34,7 @@ const (
 
 type market struct {
 	symbol   string
-	decimals uint
+	decimals uint8
 }
 
 type JST struct {
@@ -97,6 +97,13 @@ func (j *JST) handleStableCoin(event *net.Event) {
 				misc.FormatUser(redeemer),
 				misc.FormatTxUrl(event.TransactionHash))
 		}
+	}
+}
+
+func (j *JST) handleMarketEvents(event *net.Event) {
+	switch event.EventName {
+	case "LiquidateBorrow":
+
 	}
 }
 

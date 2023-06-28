@@ -20,7 +20,7 @@ type ilk struct {
 	token   string
 	gemJoin string
 	psm     string
-	decimal uint
+	decimal uint8
 }
 
 const (

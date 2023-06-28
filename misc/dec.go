@@ -11,7 +11,7 @@ func ToBigInt(hexData string) *big.Int {
 	return big.NewInt(0).SetBytes(hexutils.HexToBytes(hexData))
 }
 
-func ConvertDecN(amt *big.Int, decimal uint) *big.Int {
+func ConvertDecN(amt *big.Int, decimal uint8) *big.Int {
 	return amt.Div(amt, GetDec(decimal))
 }
 
@@ -49,7 +49,7 @@ func ToReadableDec(n *big.Int) string {
 	return string(buf[i+1:])
 }
 
-func GetDec(d uint) *big.Int {
+func GetDec(d uint8) *big.Int {
 	decFloat, _ := new(big.Float).SetString("1e" + strconv.Itoa(int(d)))
 	decInt, _ := decFloat.Int(new(big.Int))
 	return decInt
