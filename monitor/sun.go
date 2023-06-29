@@ -194,13 +194,13 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, coin0, coin1, pool strin
 					misc.FormatTokenAmt(tokenName, tokenAmount.Neg(tokenAmount), true),
 					misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
 					misc.FormatTxUrl(event.TransactionHash)), tokenName)
-				slack.SendMsg(s.topic, msg+" - ["+pool+"]")
+				slack.SendMsg(s.topic, msg+" in `"+pool+"`")
 			}
 		}
 	case "RampA":
 		oldA, _ := new(big.Int).SetString(event.Result["old_A"], 10)
 		newA, _ := new(big.Int).SetString(event.Result["new_A"], 10)
-		slack.SendMsg(s.topic, "["+pool+"] Ramp A from  `%d` => `%d`, %s in `%s`",
+		slack.SendMsg(s.topic, "Ramp A from  `%d` => `%d`, %s in `%s`",
 			oldA, newA, misc.FormatTxUrl(event.TransactionHash), pool)
 	}
 }
@@ -282,7 +282,7 @@ func (s *SUN) report() {
 			coin1Ratio = coin1Float64 / coin0Float64
 			format = "`%.3f%%` : `%.3f%%` :curly_loop: `%.0f` : `%.3f`"
 		}
-		slack.SendMsg(s.topic, "["+v.name+"] State Report, %s, %s, A - `%d`, Ratio - "+format+" in `%s`",
+		slack.SendMsg(s.topic, "State Report, %s, %s, A - `%d`, Ratio - "+format+" in `%s`",
 			misc.FormatTokenAmt(v.coinsName[0], coin0PoolBalance, false),
 			misc.FormatTokenAmt(v.coinsName[1], coin1PoolBalance, false),
 			curA,

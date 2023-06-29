@@ -1,6 +1,7 @@
 package net
 
 import (
+	"psm-monitor/config"
 	"psm-monitor/misc"
 
 	"bytes"
@@ -21,7 +22,6 @@ import (
 )
 
 const (
-	Endpoint         = "https://api.trongrid.io/"
 	TriggerPath      = "wallet/triggerconstantcontract"
 	BlockEventsPath  = "v1/blocks/%d/events?limit=200"
 	LatestEventsPath = "v1/blocks/latest/events?limit=200"
@@ -64,7 +64,7 @@ func newJsonRpcMessage(method string, params []byte) *JsonRpcMessage {
 }
 
 func CallJsonRpc(method string, params []byte) ([]byte, error) {
-	data, err := Post(Endpoint+"jsonrpc", newJsonRpcMessage(method, params), nil)
+	data, err := Post(config.Get().FullNode+"jsonrpc", newJsonRpcMessage(method, params), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +88,11 @@ func BlockNumber() uint64 {
 }
 
 func GetBlockEvents(blockNumber uint64) []*Event {
-	return getEvents(Endpoint + fmt.Sprintf(BlockEventsPath, blockNumber))
+	return getEvents(config.Get().FullNode + fmt.Sprintf(BlockEventsPath, blockNumber))
 }
 
 func GetLatestBlockEvents() []*Event {
-	return getEvents(Endpoint + LatestEventsPath)
+	return getEvents(config.Get().FullNode + LatestEventsPath)
 }
 
 func getEvents(url string) []*Event {
@@ -123,7 +123,7 @@ func GetTxFrom(id string) string {
 }
 
 func Trigger(addr, selector, param string) (string, error) {
-	resData, err := Post(Endpoint+TriggerPath, TriggerRequest{
+	resData, err := Post(config.Get().FullNode+TriggerPath, TriggerRequest{
 		OwnerAddress:     "T9yD14Nj9j7xAB4dbGeiX9h8unkKHxuWwb",
 		ContractAddress:  addr,
 		FunctionSelector: selector,

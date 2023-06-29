@@ -9,6 +9,7 @@ import (
 type Config struct {
 	SlackWebhook string `toml:"slack_webhook"`
 	LogLevel     string `toml:"log_level"`
+	FullNode     string `toml:"full_node"`
 	SUN          SUNConfig
 	PSM          PSMConfig
 	JST          JSTConfig
