@@ -88,11 +88,11 @@ func BlockNumber() uint64 {
 }
 
 func GetBlockEvents(blockNumber uint64) []*Event {
-	return getEvents(config.Get().FullNode + fmt.Sprintf(BlockEventsPath, blockNumber))
+	return getEvents("https://api.trongrid.io/" + fmt.Sprintf(BlockEventsPath, blockNumber))
 }
 
 func GetLatestBlockEvents() []*Event {
-	return getEvents(config.Get().FullNode + LatestEventsPath)
+	return getEvents("https://api.trongrid.io/" + LatestEventsPath)
 }
 
 func getEvents(url string) []*Event {
