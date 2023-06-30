@@ -116,8 +116,8 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 	}
 	sun.pools[TUSD_2Pool_Name].init(2)
 
-	for k, v := range sun.pools {
-		concerned[k] = func(event *net.Event) {
+	for _, v := range sun.pools {
+		concerned[v.addr] = func(event *net.Event) {
 			sun.handleSwapSwapPoolEvent(event, v.coinsName[0], v.coinsName[1], v.name)
 		}
 	}
