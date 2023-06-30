@@ -118,14 +118,14 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 
 	for _, v := range sun.pools {
 		concerned[v.addr] = func(event *net.Event) {
-			sun.handleSwapSwapPoolEvent(event, v.coinsName[0], v.coinsName[1], v.name)
+			sun.handleSwapSwapPoolEvent(event, v)
 		}
 	}
 
 	sun.init()
 }
 
-func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, coin0, coin1, pool string) {
+func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, pool *pool) {
 	switch event.EventName {
 	case "TokenExchange":
 		var (
@@ -136,16 +136,16 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, coin0, coin1, pool strin
 		soldAmount, _ := new(big.Int).SetString(event.Result["tokens_sold"], 10)
 		if strings.Compare(event.Result["sold_id"], "0") == 0 {
 			// swap coin0 => coin1
-			boughtToken = coin1
-			boughtAmount = misc.ConvertDec6(boughtAmount)
-			soldToken = coin0
-			soldAmount = misc.ConvertDec18(soldAmount)
+			boughtToken = pool.coinsName[1]
+			boughtAmount = misc.ConvertDecN(boughtAmount, pool.coinsDec[1])
+			soldToken = pool.coinsName[0]
+			soldAmount = misc.ConvertDecN(soldAmount, pool.coinsDec[0])
 		} else {
 			// swap coin1 => coin0
-			boughtToken = coin0
-			boughtAmount = misc.ConvertDec18(boughtAmount)
-			soldToken = coin1
-			soldAmount = misc.ConvertDec6(soldAmount)
+			boughtToken = pool.coinsName[0]
+			boughtAmount = misc.ConvertDecN(boughtAmount, pool.coinsDec[0])
+			soldToken = pool.coinsName[1]
+			soldAmount = misc.ConvertDecN(soldAmount, pool.coinsDec[1])
 		}
 		diff := big.NewInt(0)
 		diff = diff.Sub(soldAmount, boughtAmount)
@@ -166,12 +166,12 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, coin0, coin1, pool strin
 					float64(diff.Uint64())/float64(soldAmount.Uint64())*100)
 			}
 			msg += misc.FormatTxUrl(event.TransactionHash)
-			slack.SendMsg(s.topic, msg+" in `"+pool+"`")
+			slack.SendMsg(s.topic, msg+" in `"+pool.name+"`")
 		}
 	case "AddLiquidity":
-		s.reportLiquidityOperation(event, coin0, coin1, pool, false)
+		s.reportLiquidityOperation(event, pool, false)
 	case "RemoveLiquidity", "RemoveLiquidityImbalance":
-		s.reportLiquidityOperation(event, coin0, coin1, pool, true)
+		s.reportLiquidityOperation(event, pool, true)
 	case "RemoveLiquidityOne":
 		tokenAmount, _ := new(big.Int).SetString(event.Result["coin_amount"], 10)
 		threshold := big.NewInt(config.Get().SUN.LiquidityThreshold)
@@ -181,12 +181,12 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, coin0, coin1, pool strin
 		if err := json.Unmarshal(rspData, &tx); err == nil {
 			if tx.TriggerInfo.Parameter["i"] == "0" {
 				// remove coin0
-				tokenAmount = misc.ConvertDec18(tokenAmount)
-				tokenName = coin0
+				tokenAmount = misc.ConvertDecN(tokenAmount, pool.coinsDec[0])
+				tokenName = pool.coinsName[0]
 			} else {
 				// remove coin1
-				tokenAmount = misc.ConvertDec6(tokenAmount)
-				tokenName = coin1
+				tokenAmount = misc.ConvertDecN(tokenAmount, pool.coinsDec[1])
+				tokenName = pool.coinsName[1]
 			}
 			if tokenAmount.Cmp(threshold) >= 0 {
 				msg := appendWarningIfNeeded(fmt.Sprintf("Large %s, %s, %s, %s",
@@ -194,7 +194,7 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, coin0, coin1, pool strin
 					misc.FormatTokenAmt(tokenName, tokenAmount.Neg(tokenAmount), true),
 					misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
 					misc.FormatTxUrl(event.TransactionHash)), tokenName)
-				slack.SendMsg(s.topic, msg+" in `"+pool+"`")
+				slack.SendMsg(s.topic, msg+" in `"+pool.name+"`")
 			}
 		}
 	case "RampA":
@@ -205,15 +205,15 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, coin0, coin1, pool strin
 	}
 }
 
-func (s *SUN) reportLiquidityOperation(event *net.Event, coin0, coin1, pool string, isRemove bool) {
+func (s *SUN) reportLiquidityOperation(event *net.Event, pool *pool, isRemove bool) {
 	tokenAmounts := strings.Split(event.Result["token_amounts"], "\n")
 	changedLiquidityOfCoin0, _ := new(big.Int).SetString(tokenAmounts[0], 10)
-	changedLiquidityOfCoin0 = misc.ConvertDec18(changedLiquidityOfCoin0)
+	changedLiquidityOfCoin0 = misc.ConvertDecN(changedLiquidityOfCoin0, pool.coinsDec[0])
 	if isRemove {
 		changedLiquidityOfCoin0 = changedLiquidityOfCoin0.Neg(changedLiquidityOfCoin0)
 	}
 	changedLiquidityOfCoin1, _ := new(big.Int).SetString(tokenAmounts[1], 10)
-	changedLiquidityOfCoin1 = misc.ConvertDec6(changedLiquidityOfCoin1)
+	changedLiquidityOfCoin1 = misc.ConvertDecN(changedLiquidityOfCoin1, pool.coinsDec[1])
 	if isRemove {
 		changedLiquidityOfCoin1 = changedLiquidityOfCoin1.Neg(changedLiquidityOfCoin1)
 	}
@@ -221,14 +221,14 @@ func (s *SUN) reportLiquidityOperation(event *net.Event, coin0, coin1, pool stri
 	if changedLiquidityOfCoin0.CmpAbs(threshold) >= 0 || changedLiquidityOfCoin1.CmpAbs(threshold) >= 0 {
 		msg := fmt.Sprintf("Large %s, %s, %s, %s, %s",
 			event.EventName,
-			misc.FormatTokenAmt(coin0, changedLiquidityOfCoin0, true),
-			misc.FormatTokenAmt(coin1, changedLiquidityOfCoin1, true),
+			misc.FormatTokenAmt(pool.coinsName[0], changedLiquidityOfCoin0, true),
+			misc.FormatTokenAmt(pool.coinsName[1], changedLiquidityOfCoin1, true),
 			misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
 			misc.FormatTxUrl(event.TransactionHash))
-		if changedLiquidityOfCoin0.Cmp(big.NewInt(0)) < 0 && strings.Compare(coin0, "USDT") == 0 || changedLiquidityOfCoin1.Cmp(big.NewInt(0)) < 0 && strings.Compare(coin1, "USDT") == 0 {
+		if changedLiquidityOfCoin0.Cmp(big.NewInt(0)) < 0 && strings.Compare(pool.coinsName[0], "USDT") == 0 || changedLiquidityOfCoin1.Cmp(big.NewInt(0)) < 0 && strings.Compare(pool.coinsName[1], "USDT") == 0 {
 			msg = appendWarningIfNeeded(msg, "USDT")
 		}
-		slack.SendMsg(s.topic, msg+" in `"+pool+"`")
+		slack.SendMsg(s.topic, msg+" in `"+pool.name+"`")
 	}
 }
 

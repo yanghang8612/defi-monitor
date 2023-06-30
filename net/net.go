@@ -64,7 +64,7 @@ func newJsonRpcMessage(method string, params []byte) *JsonRpcMessage {
 }
 
 func CallJsonRpc(method string, params []byte) ([]byte, error) {
-	data, err := Post(config.Get().FullNode+"jsonrpc", newJsonRpcMessage(method, params), nil)
+	data, err := Post(config.Get().EventServer+"jsonrpc", newJsonRpcMessage(method, params), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +88,11 @@ func BlockNumber() uint64 {
 }
 
 func GetBlockEvents(blockNumber uint64) []*Event {
-	return getEvents("https://api.trongrid.io/" + fmt.Sprintf(BlockEventsPath, blockNumber))
+	return getEvents(config.Get().EventServer + fmt.Sprintf(BlockEventsPath, blockNumber))
 }
 
 func GetLatestBlockEvents() []*Event {
-	return getEvents("https://api.trongrid.io/" + LatestEventsPath)
+	return getEvents(config.Get().EventServer + LatestEventsPath)
 }
 
 func getEvents(url string) []*Event {

@@ -1,6 +1,7 @@
 slack_webhook = "...(your slack webhook url)"
 log_level = "debug"
 full_node = "https://api.trongrid.io/"
+event_server = "https://api.trongrid.io/"
 [SUN]
 swap_threshold = 100_000
 liquidity_threshold = 100_000
