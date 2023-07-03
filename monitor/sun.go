@@ -7,7 +7,6 @@ import (
 	"psm-monitor/net"
 	"psm-monitor/slack"
 
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -42,6 +41,8 @@ type pool struct {
 
 	// stats balances for this pool
 	sPoolBalances []*big.Int
+
+	removeOneGot bool
 }
 
 func (p *pool) init(n int) {
@@ -120,6 +121,12 @@ func StartSUN(c *cron.Cron, concerned map[string]func(event *net.Event)) {
 		concerned[v.addr] = func(event *net.Event) {
 			sun.handleSwapSwapPoolEvent(event, v)
 		}
+		concerned[v.coinsAddr[0]] = func(event *net.Event) {
+			sun.handleSwapSwapPoolEvent(event, v)
+		}
+		concerned[v.coinsAddr[1]] = func(event *net.Event) {
+			sun.handleSwapSwapPoolEvent(event, v)
+		}
 	}
 
 	sun.init()
@@ -173,13 +180,16 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, pool *pool) {
 	case "RemoveLiquidity", "RemoveLiquidityImbalance":
 		s.reportLiquidityOperation(event, pool, true)
 	case "RemoveLiquidityOne":
-		tokenAmount, _ := new(big.Int).SetString(event.Result["coin_amount"], 10)
-		threshold := big.NewInt(config.Get().SUN.LiquidityThreshold)
-		tokenName := ""
-		rspData, _ := net.Get("https://apilist.tronscan.org/api/transaction-info?hash="+event.TransactionHash, nil)
-		var tx oneCoinTx
-		if err := json.Unmarshal(rspData, &tx); err == nil {
-			if tx.TriggerInfo.Parameter["i"] == "0" {
+		// For RemoveLiquidityOne, there is no way to judge which coin is removed
+		// So we judge coin by the next Transfer event
+		pool.removeOneGot = true
+	case "Transfer":
+		if pool.removeOneGot {
+			pool.removeOneGot = false
+			tokenAmount, _ := new(big.Int).SetString(event.Result["value"], 10)
+			threshold := big.NewInt(config.Get().SUN.LiquidityThreshold)
+			tokenName := ""
+			if strings.Compare(event.Address, pool.coinsAddr[0]) == 0 {
 				// remove coin0
 				tokenAmount = misc.ConvertDecN(tokenAmount, pool.coinsDec[0])
 				tokenName = pool.coinsName[0]
@@ -189,8 +199,7 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, pool *pool) {
 				tokenName = pool.coinsName[1]
 			}
 			if tokenAmount.Cmp(threshold) >= 0 {
-				msg := appendWarningIfNeeded(fmt.Sprintf("Large %s, %s, %s, %s",
-					event.EventName,
+				msg := appendWarningIfNeeded(fmt.Sprintf("Large RemoveLiquidityOne, %s, %s, %s",
 					misc.FormatTokenAmt(tokenName, tokenAmount.Neg(tokenAmount), true),
 					misc.FormatUser(net.GetTxFrom(event.TransactionHash)),
 					misc.FormatTxUrl(event.TransactionHash)), tokenName)
@@ -201,7 +210,7 @@ func (s *SUN) handleSwapSwapPoolEvent(event *net.Event, pool *pool) {
 		oldA, _ := new(big.Int).SetString(event.Result["old_A"], 10)
 		newA, _ := new(big.Int).SetString(event.Result["new_A"], 10)
 		slack.SendMsg(s.topic, "Ramp A from  `%d` => `%d`, %s in `%s`",
-			oldA, newA, misc.FormatTxUrl(event.TransactionHash), pool)
+			oldA, newA, misc.FormatTxUrl(event.TransactionHash), pool.name)
 	}
 }
 
