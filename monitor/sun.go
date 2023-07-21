@@ -312,6 +312,7 @@ func (s *SUN) stats() {
 			misc.FormatTokenAmt(v.coinsName[0], v.sPoolBalances[0].Sub(coin0PoolBalance, v.sPoolBalances[0]), true),
 			misc.FormatTokenAmt(v.coinsName[1], v.sPoolBalances[1].Sub(coin1PoolBalance, v.sPoolBalances[1]), true),
 			v.name)
-		v.sPoolBalances[0], v.sPoolBalances[1], s.sTime = coin0PoolBalance, coin1PoolBalance, now
+		v.sPoolBalances[0], v.sPoolBalances[1] = coin0PoolBalance, coin1PoolBalance
 	}
+	s.sTime = time.Now()
 }
