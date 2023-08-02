@@ -1,4 +1,5 @@
 slack_webhook = "...(your slack webhook url)"
+fee_slack_webhook = "...(your fee slack webhook url)"
 log_level = "debug"
 full_node = "https://api.trongrid.io/"
 event_server = "https://api.trongrid.io/"

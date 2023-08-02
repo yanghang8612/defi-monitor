@@ -7,13 +7,14 @@ import (
 )
 
 type Config struct {
-	SlackWebhook string `toml:"slack_webhook"`
-	LogLevel     string `toml:"log_level"`
-	FullNode     string `toml:"full_node"`
-	EventServer  string `toml:"event_server"`
-	SUN          SUNConfig
-	PSM          PSMConfig
-	JST          JSTConfig
+	SlackWebhook    string `toml:"slack_webhook"`
+	FeeSlackWebhook string `toml:"fee_slack_webhook"`
+	LogLevel        string `toml:"log_level"`
+	FullNode        string `toml:"full_node"`
+	EventServer     string `toml:"event_server"`
+	SUN             SUNConfig
+	PSM             PSMConfig
+	JST             JSTConfig
 }
 
 type SUNConfig struct {

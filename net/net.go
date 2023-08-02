@@ -1,9 +1,6 @@
 package net
 
 import (
-	"psm-monitor/config"
-	"psm-monitor/misc"
-
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -14,8 +11,13 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/thedevsaddam/gojsonq/v2"
+	"psm-monitor/config"
+	"psm-monitor/misc"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/status-im/keycard-go/hexutils"
@@ -23,6 +25,7 @@ import (
 
 const (
 	TriggerPath      = "wallet/triggerconstantcontract"
+	ParametersPath   = "wallet/getchainparameters"
 	BlockEventsPath  = "v1/blocks/%d/events?limit=200"
 	LatestEventsPath = "v1/blocks/latest/events?limit=200"
 )
@@ -85,6 +88,46 @@ func BlockNumber() uint64 {
 	} else {
 		return 0
 	}
+}
+
+func GetPrice(token string) float64 {
+	result, err := Get("https://c.tronlink.org/v1/cryptocurrency/getprice?convert=USD&symbol="+token, nil)
+	if err != nil {
+		return 0
+	}
+
+	priceStr := gojsonq.New().FromString(string(result)).Find("data." + token + ".quote.USD.price")
+
+	price, err := strconv.ParseFloat(priceStr.(string), 64)
+	if err != nil {
+		return 0
+	}
+	return price
+}
+
+func GetGasPrice() int {
+	result, err := Get("https://api.etherscan.io/api?module=gastracker&action=gasoracle&apikey=82SMH9HIUESXN4IPSFA237VHIMHQB1AQSI", nil)
+	if err != nil {
+		return 0
+	}
+
+	gasPriceStr := gojsonq.New().FromString(string(result)).Find("result.ProposeGasPrice")
+
+	gasPrice, err := strconv.Atoi(gasPriceStr.(string))
+	if err != nil {
+		return 0
+	}
+	return gasPrice
+}
+
+func GetEnergyPriceAndFactor() (float64, float64) {
+	result, err := Get(config.Get().FullNode+ParametersPath, nil)
+	if err != nil {
+		return 0, 0
+	}
+
+	parameters := gojsonq.New().FromString(string(result)).Find("chainParameter").([]interface{})
+	return parameters[11].(map[string]interface{})["value"].(float64), parameters[62].(map[string]interface{})["value"].(float64)
 }
 
 func GetBlockEvents(blockNumber uint64) []*Event {

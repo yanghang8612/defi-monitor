@@ -30,6 +30,17 @@ func SendMsg(topic, format string, a ...any) {
 	}
 }
 
+func ReportFee(message string) {
+	msg := &Message{
+		Text: message,
+	}
+	if _, err := net.Post(config.Get().FeeSlackWebhook, msg, checkIfResponseOk); err != nil {
+		misc.Warn("Send slack message", fmt.Sprintf("content=\"%s\" res=failed reason=\"%s\"", msg, err.Error()))
+	} else {
+		misc.Info("Send slack message", fmt.Sprintf("content=\"%s\" res=success", msg))
+	}
+}
+
 func checkIfResponseOk(resBody []byte) error {
 	if strings.ContainsAny(string(resBody), "ok") {
 		return nil

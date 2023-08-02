@@ -27,6 +27,7 @@ func main() {
 	monitor.StartPSM(c, trackedEvent)
 	monitor.StartSUN(c, trackedEvent)
 	monitor.StartJST(c, trackedEvent)
+	monitor.StartTrackFee(c)
 	_ = c.AddFunc("*/3 * * * * ?", misc.WrapLog(track))
 	c.Start()
 
